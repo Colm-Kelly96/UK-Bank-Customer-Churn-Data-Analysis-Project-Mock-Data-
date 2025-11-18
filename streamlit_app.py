@@ -60,45 +60,48 @@ with col4:
 
 st.markdown("---")
 
-# ==================== TOP 5 CHURN DRIVERS (100% SAFE VERSION) ====================
+# ==================== TOP 5 CHURN DRIVERS (GUARANTEED 5 ROWS) ====================
 st.subheader("⚠️ Top 5 Churn Drivers")
 
 overall_churn = df['has_exited'].mean()
 
-drivers = [
-    {'churn_driver': 'Has Complaint: Yes',          'filter': df['has_complaint'] == 'Yes'},
-    {'churn_driver': 'Number of Products: 1',       'filter': df['num_products'] == 1},
-    {'churn_driver': 'NPS Band: Detractor',         'filter': df['nps_band'] == 'Detractor'},
-    {'churn_driver': 'Active Member: No',           'filter': df['is_active_member'] == 'No'},
-]
+# Create age group first (safe bins)
+df['age_group'] = pd.cut(df['age'], bins=[0, 25, 40, 60, 100], labels=['18-25', '26-40', '41-60', '61+'], right=False)
 
-# Add age group safely
-df['age_group'] = pd.cut(df['age'], bins=[0,25,40,60,100], labels=['18-25','26-40','41-60','61+'], right=False)
-drivers.append({'churn_driver': 'Age Group: 18-25', 'filter': df['age_group'] == '18-25'})
+drivers = [
+    {'name': 'Has Complaint: Yes',          'condition': df['has_complaint'].astype(str).str.capitalize() == 'Yes'},
+    {'name': 'Number of Products: 1',       'condition': df['num_products'] == 1},
+    {'name': 'NPS Band: Detractor',         'condition': df['nps_band'] == 'Detractor'},
+    {'name': 'Active Member: No',           'condition': (df['is_active_member'].astype(str).str.capitalize() == 'No') | (df['is_active_member'] == 0)},
+    {'name': 'Age Group: 18-25',            'condition': df['age_group'] == '18-25'},
+]
 
 results = []
 for d in drivers:
-    subset = df[d['filter']]
-    if len(subset) > 0:  # Only include if segment actually exists
-        churn_rate = subset['has_exited'].mean()
-        results.append({
-            'churn_driver': d['churn_driver'],
-            'total_customers': len(subset),
-            'churned_customers': subset['has_exited'].sum(),
-            'churn_percentage': f"{churn_rate*100:.2f}%",
-            'risk_multiplier': f"{churn_rate / overall_churn:.2f}x" if overall_churn > 0 else "N/A"
-        })
+    subset = df[d['condition']]
+    total = len(subset)
+    churned = subset['has_exited'].sum()
+    churn_rate = churned / total if total > 0 else 0
+    results.append({
+        'churn_driver': d['name'],
+        'total_customers': total,
+        'churned_customers': churned,
+        'churn_percentage': f"{churn_rate*100:.2f}%",
+        'risk_multiplier': f"{(churn_rate / overall_churn):.2f}x" if overall_churn > 0 else "N/A"
+    })
 
-churn_drivers_df = pd.DataFrame(results)
-churn_drivers_df = churn_drivers_df.sort_values('churned_customers', ascending=False).reset_index(drop=True)
-churn_drivers_df['rank'] = range(1, len(churn_drivers_df) + 1)   # ← THIS LINE NOW SAFE
+# Force exactly 5 rows and correct rank/order
+churn_drivers_df = pd.DataFrame(results).sort_values('churned_customers', ascending=False).reset_index(drop=True)
+churn_drivers_df['rank'] = [1, 2, 3, 4, 5]
 
+# Display
 st.dataframe(
     churn_drivers_df[['rank', 'churn_driver', 'churn_percentage', 'risk_multiplier', 'total_customers', 'churned_customers']],
     use_container_width=True,
     height=250
 )
 
+# Bar chart
 fig = go.Figure()
 fig.add_trace(go.Bar(
     x=churn_drivers_df['churn_driver'],
@@ -107,7 +110,7 @@ fig.add_trace(go.Bar(
     textposition='outside',
     marker_color='#ff6b6b'
 ))
-fig.update_layout(title="Churned Customers by Driver", height=400, showlegend=False)
+fig.update_layout(title="Churned Customers by Driver", height=420, showlegend=False)
 st.plotly_chart(fig, use_container_width=True)
 
 # ==================== HIGH-RISK SEGMENTS (AS YOU REQUESTED) ====================
