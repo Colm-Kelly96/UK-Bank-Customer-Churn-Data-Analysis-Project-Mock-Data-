@@ -28,7 +28,7 @@ st.title("🏦 UK Bank Customer Churn Analysis")
 st.markdown("### Strategic Retention Insights Dashboard")
 st.markdown("""
 <div style='font-size:16px; color: #555; margin-bottom: 20px;'>
-    ⚠️ <em>Work In Progress - Building out analysis and visualisations using a mock data set.</em>
+    ♻️ <em>Work In Progress - Building out analysis and visualisations using a mock data set.</em>
 </div>
 """, unsafe_allow_html=True)
 
