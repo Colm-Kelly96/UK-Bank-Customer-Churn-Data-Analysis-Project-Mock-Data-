@@ -205,6 +205,30 @@ st.info("""
 This dual approach delivers maximum retention ROI.
 """)
 
+# ==================== BUSINESS RECOMMENDATIONS ====================
+st.markdown("---")
+st.subheader("💡 Business Recommendations")
+
+st.markdown("""
+### Immediate Actions (0-30 days)
+
+1. **Cross-Sell Blitz**  
+_Target:_ 4,734 single-product customers  
+_Offer:_ Second product with incentive (e.g., fee waiver, cashback)  
+_Expected impact:_ Reduce churn from 36.9% to 6-7% → save ~1,500 customers  
+
+2. **Complaint Fast-Track**  
+_Target:_ 300 complainers (especially Card Issues, Access, Fraud)  
+_SLA:_ Resolve within 48 hours for severity 4-5 issues  
+_Expected impact:_ Reduce complaint-driven churn from 65% to 40% → save ~75 customers  
+
+3. **Inactive Re-activation**  
+_Target:_ 4,027 inactive members  
+_Campaign:_ Push notifications, special offers, gamification  
+_Expected impact:_ Reactivate 20% → reduce churn by 229 customers  
+""")
+
+
 # ==================== FOOTER ====================
 st.markdown("---")
 st.markdown("""
