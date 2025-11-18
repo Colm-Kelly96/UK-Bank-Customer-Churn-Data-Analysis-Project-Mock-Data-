@@ -111,7 +111,7 @@ st.plotly_chart(fig, use_container_width=True)
 st.subheader("🎯 High-Risk Combination Segments")
 
 st.markdown("#### Volume Retention (Top 10 by Number of Churned Customers)")
-st.markdown("**🔥 Key Insight: 9 of the top 10 high-volume churn segments involve customers with only a single product \nSingle-product customers are the biggest driver of churn volume — focusing on them with proactive retention will have the biggest impact**")
+st.markdown("**🔥 Key Insight: 9 of the top 10 high-volume churn segments involve customers with only a single product** \nSingle-product customers are the biggest driver of churn volume — focusing on them with proactive retention will have the biggest impact**")
 
 volume_data = {
     'rank': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
