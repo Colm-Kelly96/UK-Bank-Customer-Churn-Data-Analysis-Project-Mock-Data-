@@ -2,7 +2,7 @@
 
 ## 🎯 Project Overview
 
-Interactive data analysis dashboard built to demonstrate advanced SQL, Python, and data visualization skills for product analytics roles in financial services. This project showcases end-to-end data product development using LLM-assisted workflows.
+Interactive data analysis dashboard built to demonstrate advanced SQL, Python, and data visualization skills for product analytics project. This project showcases end-to-end data product development using LLM-assisted workflows.
 
 **Live Dashboard:** [Add your Streamlit URL here]
 
