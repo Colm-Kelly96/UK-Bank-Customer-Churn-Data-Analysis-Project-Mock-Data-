@@ -148,7 +148,7 @@ col1, col2 = st.columns(2)
 with col1:
     st.markdown("""
     ### 📈 Volume Retention
-    **Goal: Stop the bleeding at scale**
+    **Goal: Reduce churn at scale**
 
     **Primary Target Segments:**
     - Single Product + Any Other Trait  
@@ -176,10 +176,10 @@ with col2:
     """)
 
 st.info("""
-**Core Strategic Principle:**  
-Apply the right strategy to the right segment:  
-→ **Volume Retention** for single-product or inactive customers (scale)  
-→ **Crisis Management** the moment a complaint appears (urgency)  
+**Core Principle:**  
+→ **Single-product and inactive customers → fix at scale with proactive programmes  
+→ **Complaining customers → fix immediately with reactive retention 
+Execute both tracks in parallel for maximum ROI
 
 This dual approach delivers maximum retention ROI.
 """)
