@@ -85,6 +85,7 @@ st.subheader("⚠️ Top 5 Churn Drivers")
 
 # Create churn drivers data
 churn_drivers_data = {
+    'rank': [1, 2, 3, 4, 5],
     'churn_driver': [
         'Has Complaint: Yes',
         'Number of Products: 1',
@@ -134,28 +135,28 @@ st.markdown("---")
 # ==================== SECTION 3: HIGH-RISK COMBO SEGMENTS ====================
 st.subheader("🎯 High-Risk Combination Segments")
 
-st.markdown("#### Top 10 At-Risk Segments by Priority Score")
-st.markdown("*Priority Score = Churned Customers × Risk Multiplier*")
+st.markdown("#### Strategy A: Volume Retention (Top 10 by Churned Customers)")
+st.markdown("**Target for broad campaigns and cross-sell programs**")
 
-# Top 10 by priority score
+# Top 10 by churned customers volume
 combo_priority_data = {
+    'rank': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     'at_risk_segment': [
         'Single Product Only + No Complaint',
-        'Single Product Only + Inactive Member',
         'Single Product Only + Balance £30-80k (Medium)',
+        'Inactive Member + No Complaint',
         'Tenure 0-2 years + Single Product Only',
+        'Single Product Only + Inactive Member',
         'Single Product Only + NPS Not Surveyed',
         'Gender Female + Single Product Only',
         'Gender Male + Single Product Only',
         'Card Credit + Single Product Only',
-        'Card Debit + Single Product Only',
-        'Inactive Member + No Complaint'
+        'Card Debit + Single Product Only'
     ],
-    'total_customers': [4535, 1888, 3067, 2347, 2418, 2381, 2353, 2224, 1966, 3876],
-    'churned_customers': [1582, 905, 1117, 954, 888, 882, 865, 815, 755, 1033],
-    'churn_percentage': ['34.88%', '47.93%', '36.42%', '40.65%', '36.72%', '37.04%', '36.76%', '36.65%', '38.40%', '26.65%'],
-    'risk_multiplier': ['1.7x', '2.3x', '1.8x', '2.0x', '1.8x', '1.8x', '1.8x', '1.8x', '1.9x', '1.3x'],
-    'priority_score': [10.0, 7.8, 7.4, 7.0, 5.9, 5.9, 5.7, 5.4, 5.2, 5.0]
+    'total_customers': [4535, 3067, 3876, 2347, 1888, 2418, 2381, 2353, 2224, 1966],
+    'churned_customers': [1582, 1117, 1033, 954, 905, 888, 882, 865, 815, 755],
+    'churn_percentage': ['34.88%', '36.42%', '26.65%', '40.65%', '47.93%', '36.72%', '37.04%', '36.76%', '36.65%', '38.40%'],
+    'risk_multiplier': ['1.7x', '1.8x', '1.3x', '2.0x', '2.3x', '1.8x', '1.8x', '1.8x', '1.8x', '1.9x']
 }
 
 combo_priority_df = pd.DataFrame(combo_priority_data)
@@ -168,24 +169,28 @@ st.dataframe(
 
 st.markdown("---")
 
-st.markdown("#### Top 6 Crisis Segments by Churn Rate (65%+)")
-st.markdown("*Critical: Requires immediate intervention*")
+st.markdown("#### Strategy B: Crisis Management (Top 10 by Churn Percentage)")
+st.markdown("**Emergency complaint resolution - Critical for brand reputation**")
 
-# Top 6 by churn percentage
+# Top 10 by churn percentage
 combo_crisis_data = {
+    'rank': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     'at_risk_segment': [
         'NPS Detractor + Has Complaint',
         'Single Product Only + Has Complaint',
         'Inactive Member + Has Complaint',
         'Age 18-25 + Has Complaint',
         'Has Complaint + Balance £30-80k (Medium)',
-        'Age 41-60 + Has Complaint'
+        'Age 41-60 + Has Complaint',
+        'NPS Not Surveyed + Has Complaint',
+        'Age 26-40 + Has Complaint',
+        'Has Complaint + Balance £0 (Zero/Dormant)',
+        'Single Product Only + NPS Detractor'
     ],
-    'total_customers': [92, 199, 151, 55, 178, 115],
-    'churned_customers': [81, 165, 114, 41, 127, 78],
-    'churn_percentage': ['88.04%', '82.91%', '75.50%', '74.55%', '71.35%', '67.83%'],
-    'risk_multiplier': ['4.3x', '4.0x', '3.7x', '3.6x', '3.5x', '3.3x'],
-    'priority_score': [1.2, 2.4, 1.5, 0.5, 1.6, 0.9]
+    'total_customers': [92, 199, 151, 55, 178, 115, 123, 111, 53, 807],
+    'churned_customers': [81, 165, 114, 41, 127, 78, 78, 68, 32, 461],
+    'churn_percentage': ['88.04%', '82.91%', '75.50%', '74.55%', '71.35%', '67.83%', '63.41%', '61.26%', '60.38%', '57.13%'],
+    'risk_multiplier': ['4.3x', '4.0x', '3.7x', '3.6x', '3.5x', '3.3x', '3.1x', '3.0x', '2.9x', '2.8x']
 }
 
 combo_crisis_df = pd.DataFrame(combo_crisis_data)
@@ -193,7 +198,7 @@ combo_crisis_df = pd.DataFrame(combo_crisis_data)
 st.dataframe(
     combo_crisis_df,
     use_container_width=True,
-    height=300
+    height=400
 )
 
 st.markdown("---")
