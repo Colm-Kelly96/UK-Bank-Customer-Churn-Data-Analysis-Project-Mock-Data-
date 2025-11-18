@@ -34,7 +34,7 @@ st.markdown("""
 
 st.markdown("""
 <a href="#recommended-retention-strategy" style="font-size:16px; text-decoration:none; color:#007bff;">
-🔥 Actionable Recommendations
+🔗 Actionable Recommendations
 </a>
 """, unsafe_allow_html=True)
 
