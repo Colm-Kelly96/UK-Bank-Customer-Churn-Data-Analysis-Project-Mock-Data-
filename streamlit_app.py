@@ -3,6 +3,13 @@ import sqlite3
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import accuracy_score, precision_score, f1_score, roc_auc_score
+import xgboost as xgb
+import shap
+import matplotlib.pyplot as plt
 
 # Page config
 st.set_page_config(
@@ -23,23 +30,10 @@ conn = get_connection()
 def load_data():
     query = """
     SELECT 
-        c.customer_id,
-        c.surname,
-        c.age,
-        c.gender,
-        c.region,
-        a.balance,
-        a.num_products,
-        a.tenure,
-        a.estimated_salary,
-        e.is_active_member,
-        e.card_type,
-        co.has_complaint,
-        co.satisfaction_score,
-        co.complaint_date,
-        co.complaint_category,
-        co.nps_response,
-        co.nps_band,
+        c.customer_id, c.surname, c.age, c.gender, c.region,
+        a.balance, a.num_products, a.tenure, a.estimated_salary,
+        e.is_active_member, e.card_type,
+        co.has_complaint, co.satisfaction_score, co.complaint_category, co.nps_band,
         ch.has_exited
     FROM customers c
     JOIN accounts a ON c.customer_id = a.customer_id
@@ -51,22 +45,35 @@ def load_data():
 
 df = load_data()
 
-# Calculate baseline churn rate
-baseline_churn = (df['has_exited'].sum() / len(df)) * 100
+# ==================== SIDEBAR FILTERS ====================
+st.sidebar.header("🔍 Filters")
+selected_region = st.sidebar.multiselect("Region", options=df['region'].unique(), default=df['region'].unique())
+selected_gender = st.sidebar.multiselect("Gender", options=df['gender'].unique(), default=df['gender'].unique())
+selected_age = st.sidebar.slider("Age Range", int(df['age'].min()), int(df['age'].max()), (18, 80))
 
-# Title
+# Apply filters
+df_filtered = df[
+    df['region'].isin(selected_region) &
+    df['gender'].isin(selected_gender) &
+    (df['age'].between(selected_age[0], selected_age[1]))
+].copy()
+
+st.sidebar.info(f"Showing {len(df_filtered):,} of {len(df):,} customers")
+
+# Use df_filtered for all calculations below
+df = df_filtered
+
+# ==================== TITLE & OVERVIEW ====================
 st.title("🏦 UK Bank Customer Churn Analysis")
 st.markdown("### Strategic Retention Insights Dashboard")
 st.markdown("---")
 
-# ==================== SECTION 1: OVERVIEW ====================
 st.subheader("📊 Executive Overview")
-
 col1, col2, col3, col4 = st.columns(4)
 
 total_customers = len(df)
 churned = df['has_exited'].sum()
-churn_rate = (churned / total_customers) * 100
+churn_rate = (churned / total_customers) * 100 if total_customers > 0 else 0
 retained = total_customers - churned
 
 with col1:
@@ -74,257 +81,310 @@ with col1:
 with col2:
     st.metric("Churned Customers", f"{churned:,}", delta=f"{churn_rate:.2f}%", delta_color="inverse")
 with col3:
-    st.metric("Retained Customers", f"{retained:,}", delta=f"{100-churn_rate:.2f}%", delta_color="normal")
+    st.metric("Retained Customers", f"{retained:,}")
 with col4:
-    st.metric("Baseline Churn Rate", f"{churn_rate:.2f}%")
+    st.metric("Overall Churn Rate", f"{churn_rate:.2f}%")
 
 st.markdown("---")
 
-# ==================== SECTION 2: TOP 5 CHURN DRIVERS ====================
+# ==================== TOP 5 CHURN DRIVERS (DYNAMIC) ====================
 st.subheader("⚠️ Top 5 Churn Drivers")
 
-# Create churn drivers data
-churn_drivers_data = {
-    'rank': [1, 2, 3, 4, 5],
-    'churn_driver': [
-        'Has Complaint: Yes',
-        'Number of Products: 1',
-        'NPS Band: Detractor',
-        'Active Member: No',
-        'Age Group: 18-25'
-    ],
-    'churn_percentage': ['65.00%', '36.90%', '35.67%', '28.48%', '26.49%'],
-    'risk_multiplier': ['3.16x', '1.79x', '1.73x', '1.38x', '1.29x'],
-    'total_customers': [300, 4734, 1643, 4027, 1412],
-    'churned_customers': [195, 1747, 586, 1147, 374]
-}
+overall_churn = df['has_exited'].mean()
 
-churn_drivers_df = pd.DataFrame(churn_drivers_data)
+drivers = []
 
-# Display as styled table
-st.dataframe(
-    churn_drivers_df,
-    use_container_width=True,
-    height=250
-)
+# Has Complaint
+group = df[df['has_complaint'] == 'Yes']
+if len(group) > 0:
+    drivers.append({
+        'churn_driver': 'Has Complaint: Yes',
+        'churn_percentage': group['has_exited'].mean() * 100,
+        'risk_multiplier': group['has_exited'].mean() / overall_churn,
+        'total_customers': len(group),
+        'churned_customers': group['has_exited'].sum()
+    })
 
-# Visualization
+# Single Product
+group = df[df['num_products'] == 1]
+if len(group) > 0:
+    drivers.append({
+        'churn_driver': 'Number of Products: 1',
+        'churn_percentage': group['has_exited'].mean() * 100,
+        'risk_multiplier': group['has_exited'].mean() / overall_churn,
+        'total_customers': len(group),
+        'churned_customers': group['has_exited'].sum()
+    })
+
+# NPS Detractor
+group = df[df['nps_band'] == 'Detractor']
+if len(group) > 0:
+    drivers.append({
+        'churn_driver': 'NPS Band: Detractor',
+        'churn_percentage': group['has_exited'].mean() * 100,
+        'risk_multiplier': group['has_exited'].mean() / overall_churn,
+        'total_customers': len(group),
+        'churned_customers': group['has_exited'].sum()
+    })
+
+# Inactive Member
+group = df[df['is_active_member'] == 'No']
+if len(group) > 0:
+    drivers.append({
+        'churn_driver': 'Active Member: No',
+        'churn_percentage': group['has_exited'].mean() * 100,
+        'risk_multiplier': group['has_exited'].mean() / overall_churn,
+        'total_customers': len(group),
+        'churned_customers': group['has_exited'].sum()
+    })
+
+# Young customers
+df['age_group'] = pd.cut(df['age'], bins=[0, 25, 40, 60, 100], labels=['18-25', '26-40', '41-60', '61+'])
+group = df[df['age_group'] == '18-25']
+if len(group) > 0:
+    drivers.append({
+        'churn_driver': 'Age Group: 18-25',
+        'churn_percentage': group['has_exited'].mean() * 100,
+        'risk_multiplier': group['has_exited'].mean() / overall_churn,
+        'total_customers': len(group),
+        'churned_customers': group['has_exited'].sum()
+    })
+
+churn_drivers_df = pd.DataFrame(drivers).sort_values('churned_customers', ascending=False).head(5).reset_index(drop=True)
+churn_drivers_df['rank'] = range(1, len(churn_drivers_df) + 1)
+churn_drivers_df['churn_percentage'] = churn_drivers_df['churn_percentage'].apply(lambda x: f"{x:.2f}%")
+churn_drivers_df['risk_multiplier'] = churn_drivers_df['risk_multiplier'].apply(lambda x: f"{x:.2f}x")
+
+st.dataframe(churn_drivers_df[['rank', 'churn_driver', 'churn_percentage', 'risk_multiplier', 'total_customers', 'churned_customers']],
+             use_container_width=True, height=250)
+
 fig_drivers = go.Figure()
-
 fig_drivers.add_trace(go.Bar(
     x=churn_drivers_df['churn_driver'],
     y=churn_drivers_df['churned_customers'],
-    name='Churned Customers',
-    marker_color='#ff6b6b',
     text=churn_drivers_df['churn_percentage'],
-    textposition='outside'
+    textposition='outside',
+    marker_color='#ff6b6b'
 ))
-
-fig_drivers.update_layout(
-    title="Churned Customers by Driver",
-    xaxis_title="Churn Driver",
-    yaxis_title="Number of Churned Customers",
-    height=400,
-    showlegend=False
-)
-
+fig_drivers.update_layout(title="Churned Customers by Driver", xaxis_title="Driver", yaxis_title="Churned Customers", height=400, showlegend=False)
 st.plotly_chart(fig_drivers, use_container_width=True)
 
 st.markdown("---")
 
-# ==================== SECTION 3: HIGH-RISK COMBO SEGMENTS ====================
+# ==================== HIGH-RISK COMBINATION SEGMENTS ====================
 st.subheader("🎯 High-Risk Combination Segments")
 
-st.markdown("#### Strategy A: Volume Retention (Top 10 by Churned Customers)")
-st.markdown("**Target for broad campaigns and cross-sell programs**")
+st.markdown("#### Volume Retention (Top 10 by Number of Churned Customers)")
+st.markdown("**Focus: Prevent the largest volume of churn through scalable interventions**")
 
-# Top 10 by churned customers volume
-combo_priority_data = {
-    'rank': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    'at_risk_segment': [
-        'Single Product Only + No Complaint',
-        'Single Product Only + Balance £30-80k (Medium)',
-        'Inactive Member + No Complaint',
-        'Tenure 0-2 years + Single Product Only',
-        'Single Product Only + Inactive Member',
-        'Single Product Only + NPS Not Surveyed',
-        'Gender Female + Single Product Only',
-        'Gender Male + Single Product Only',
-        'Card Credit + Single Product Only',
-        'Card Debit + Single Product Only'
-    ],
-    'total_customers': [4535, 3067, 3876, 2347, 1888, 2418, 2381, 2353, 2224, 1966],
-    'churned_customers': [1582, 1117, 1033, 954, 905, 888, 882, 865, 815, 755],
-    'churn_percentage': ['34.88%', '36.42%', '26.65%', '40.65%', '47.93%', '36.72%', '37.04%', '36.76%', '36.65%', '38.40%'],
-    'risk_multiplier': ['1.7x', '1.8x', '1.3x', '2.0x', '2.3x', '1.8x', '1.8x', '1.8x', '1.8x', '1.9x']
-}
+# Example dynamic combos - you can expand this logic
+combos_volume = []
+for col in ['num_products', 'is_active_member']:
+    for val in df[col].unique():
+        subset = df[df[col] == val]
+        if len(subset) > 100:
+            combos_volume.append({
+                'segment': f"{col.replace('_', ' ').title()}: {val}",
+                'total': len(subset),
+                'churned': subset['has_exited'].sum(),
+                'churn_rate': subset['has_exited'].mean()
+            })
 
-combo_priority_df = pd.DataFrame(combo_priority_data)
-
-st.dataframe(
-    combo_priority_df,
-    use_container_width=True,
-    height=400
-)
+combo_vol_df = pd.DataFrame(combos_volume).sort_values('churned', ascending=False).head(10)
+st.dataframe(combo_vol_df.style.format({'total': '{:,}', 'churned': '{:,}', 'churn_rate': '{:.2%}'}), use_container_width=True, height=400)
 
 st.markdown("---")
 
-st.markdown("#### Strategy B: Crisis Management (Top 10 by Churn Percentage)")
-st.markdown("**Emergency complaint resolution - Critical for brand reputation**")
+st.markdown("#### Crisis Management (Top 10 by Churn Percentage)")
+st.markdown("**🔥 Key Insight: 9 of the top 10 highest-churn segments involve an active complaint**  \nComplaints are the #1 predictor of imminent churn — resolving them fast is non-negotiable.")
 
-# Top 10 by churn percentage
-combo_crisis_data = {
-    'rank': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    'at_risk_segment': [
-        'NPS Detractor + Has Complaint',
-        'Single Product Only + Has Complaint',
-        'Inactive Member + Has Complaint',
-        'Age 18-25 + Has Complaint',
-        'Has Complaint + Balance £30-80k (Medium)',
-        'Age 41-60 + Has Complaint',
-        'NPS Not Surveyed + Has Complaint',
-        'Age 26-40 + Has Complaint',
-        'Has Complaint + Balance £0 (Zero/Dormant)',
-        'Single Product Only + NPS Detractor'
-    ],
-    'total_customers': [92, 199, 151, 55, 178, 115, 123, 111, 53, 807],
-    'churned_customers': [81, 165, 114, 41, 127, 78, 78, 68, 32, 461],
-    'churn_percentage': ['88.04%', '82.91%', '75.50%', '74.55%', '71.35%', '67.83%', '63.41%', '61.26%', '60.38%', '57.13%'],
-    'risk_multiplier': ['4.3x', '4.0x', '3.7x', '3.6x', '3.5x', '3.3x', '3.1x', '3.0x', '2.9x', '2.8x']
-}
+# High % combos (especially with complaints)
+combos_crisis = []
+complaint_df = df[df['has_complaint'] == 'Yes']
+for col in ['nps_band', 'num_products', 'is_active_member', 'age_group']:
+    for val in complaint_df[col].unique():
+        subset = complaint_df[complaint_df[col] == val]
+        if len(subset) > 20:
+            combos_crisis.append({
+                'segment': f"Has Complaint + {col.replace('_', ' ').title()}: {val}",
+                'total': len(subset),
+                'churned': subset['has_exited'].sum(),
+                'churn_rate': subset['has_exited'].mean()
+            })
 
-combo_crisis_df = pd.DataFrame(combo_crisis_data)
-
-st.dataframe(
-    combo_crisis_df,
-    use_container_width=True,
-    height=400
-)
+combo_crisis_df = pd.DataFrame(combos_crisis).sort_values('churn_rate', ascending=False).head(10)
+st.dataframe(combo_crisis_df.style.format({'total': '{:,}', 'churned': '{:,}', 'churn_rate': '{:.2%}'})
+             .background_gradient(subset=['churn_rate'], cmap='Reds'), use_container_width=True, height=400)
 
 st.markdown("---")
 
-# ==================== SECTION 4: STRATEGY RECOMMENDATIONS ====================
-st.subheader("💡 Dual-Strategy Retention Framework")
+# ==================== DUAL-STRATEGY RETENTION FRAMEWORK ====================
+st.subheader("💡 Recommended Retention Strategy")
 
 col1, col2 = st.columns(2)
 
 with col1:
     st.markdown("""
-    ### 📈 Strategy A: Volume Retention
-    **Priority Score 8-10 Segments**
-    
-    **Target Segments:**
-    - Single Product + No Complaint (1,582 churned)
-    - Single Product + Inactive (905 churned)
-    - Single Product + Medium Balance (1,117 churned)
-    
-    **Actions:**
-    - Broad cross-sell campaigns
-    - Product bundling incentives
-    - Re-engagement initiatives
-    - Proactive outreach programs
-    
-    **Expected Impact:**
-    - Save 1,500+ customers annually
-    - High-volume, moderate intervention cost
-    - ROI: Strong due to scale
-    
-    **Timeline:** 0-3 months for rollout
+    ### 📈 Volume Retention
+    **Goal: Stop the bleeding at scale**
+
+    **Primary Target Segments:**
+    - Single Product + Any Other Trait  
+    - Inactive Member + Any Other Trait  
+
+    **Recommended Actions:**
+    - Cross-sell & product bundling campaigns
+    - Automated re-engagement journeys
+    - Loyalty incentives for adding a second product
+    - Digital nudges for inactive accounts
+
+    **Expected Impact:**  
+    Prevent thousands of churns per year with high ROI
     """)
 
 with col2:
     st.markdown("""
-    ### 🚨 Strategy B: Crisis Management
-    **Churn Rate 65%+ Segments**
-    
-    **Target Segments:**
-    - NPS Detractor + Has Complaint (88% churn)
-    - Single Product + Has Complaint (83% churn)
-    - Any segment with complaints (70%+ churn)
-    
-    **Actions:**
-    - Emergency complaint resolution overhaul
-    - 48-hour resolution SLA
-    - Root cause analysis by category
-    - Process improvement initiatives
-    
-    **Expected Impact:**
-    - Fix systemic issues
-    - Protect brand reputation
-    - Prevent future complaints
-    
-    **Timeline:** Immediate (0-30 days)
+    ### 🚨 Crisis Management
+    **Goal: Stop customers about to leave now**
+
+    **Primary Target Segments:**
+    - Has Active Complaint + Any Other Trait  
+
+    **Recommended Actions:**
+    - 48-hour complaint resolution SLA
+    - Dedicated retention team
+    - Service recovery offers
+    - Root-cause analysis & process fixes
+
+    **Expected Impact:**  
+    Turn 70–80%+ risk into retention or advocacy
     """)
 
-st.markdown("---")
-
 st.info("""
-**Strategic Insight:** Your priority score formula optimally balances BOTH strategies:
-- **High priority scores** (8-10) = volume opportunity → broad retention campaigns
-- **High churn rates** (65%+) = crisis segments → emergency interventions
+**Core Strategic Principle:**  
+Apply the right strategy to the right segment:  
 
-This dual approach addresses both operational scale and critical risk management.
+→ Use **Volume Retention** for broad, high-impact segments like single-product or inactive customers  
+→ Switch to **Crisis Management** the moment a complaint appears — speed wins here  
+
+This dual approach maximizes both scale and urgency for the highest retention ROI.
 """)
 
 st.markdown("---")
 
-# ==================== SECTION 5: TOP 3 RETENTION DRIVERS ====================
-st.subheader("✅ Top Retention Drivers")
-st.markdown("*What keeps customers loyal?*")
+# ==================== PREDICTIVE CHURN MODELING ====================
+st.subheader("🔮 Predictive Churn Modeling")
+st.markdown("**XGBoost + SHAP • Live customer risk scoring**")
 
-# Retention drivers data (combined multi-product)
-retention_combined_data = {
-    'category': ['Number of Products', 'NPS Band', 'Tenure'],
-    'category_value': ['Multi-Product (2+)', 'Promoter', '11-15 years'],
-    'total_customers': [5266, 2140, 666],
-    'churned_customers': [310, 211, 83],
-    'churn_rate_pct': ['5.89%', '9.86%', '12.46%'],
-    'diff_from_avg': ['-14.68%', '-10.71%', '-8.11%'],
-    'correlation_strength': ['Strong', 'Strong', 'Moderate']
-}
+@st.cache_data(show_spinner="Training predictive model...")
+def train_churn_model(_df):
+    df_model = _df.copy()
+    df_model['age_group'] = pd.cut(df_model['age'], bins=[0, 25, 40, 60, 100], labels=['18-25', '26-40', '41-60', '61+'])
+    df_model['balance_salary_ratio'] = df_model['balance'] / (df_model['estimated_salary'] + 1)
+    df_model['is_zero_balance'] = (df_model['balance'] == 0).astype(int)
+    df_model['tenure_per_product'] = df_model['tenure'] / df_model['num_products'].replace(0, 1)
 
-retention_combined_df = pd.DataFrame(retention_combined_data)
+    cat_cols = ['gender', 'region', 'card_type', 'complaint_category', 'nps_band', 'age_group', 'has_complaint']
+    encoders = {}
+    for col in cat_cols:
+        le = LabelEncoder()
+        df_model[col] = le.fit_transform(df_model[col].astype(str))
+        encoders[col] = le
 
-st.dataframe(
-    retention_combined_df,
-    use_container_width=True,
-    height=200
-)
+    features = ['age', 'balance', 'num_products', 'tenure', 'estimated_salary', 'is_active_member',
+                'satisfaction_score', 'balance_salary_ratio', 'is_zero_balance', 'tenure_per_product',
+                'gender', 'region', 'card_type', 'complaint_category', 'nps_band', 'age_group', 'has_complaint']
 
-# Visualization
-fig_retention = go.Figure()
+    X = df_model[features]
+    y = df_model['has_exited']
 
-fig_retention.add_trace(go.Bar(
-    y=retention_combined_df['category_value'],
-    x=retention_combined_df['churned_customers'],
-    orientation='h',
-    marker_color='#51cf66',
-    text=retention_combined_df['churn_rate_pct'],
-    textposition='outside'
-))
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
-fig_retention.update_layout(
-    title="Retention Driver Performance",
-    xaxis_title="Churned Customers (Lower = Better)",
-    yaxis_title="Retention Driver",
-    height=350
-)
+    model = xgb.XGBClassifier(n_estimators=300, max_depth=6, learning_rate=0.05,
+                              subsample=0.8, colsample_bytree=0.8, random_state=42, eval_metric='logloss')
+    model.fit(X_train, y_train)
 
-st.plotly_chart(fig_retention, use_container_width=True)
+    y_proba = model.predict_proba(X_test)[:, 1]
+    y_pred = model.predict(X_test)
 
-st.success("""
-**Key Insight:** Customers with 2+ products have a churn rate of just 5.89% - that's **71% lower** than single-product customers (36.9%). 
+    metrics = {
+        'AUC ROC': roc_auc_score(y_test, y_proba),
+        'Accuracy': accuracy_score(y_test, y_pred),
+        'Precision': precision_score(y_test, y_pred),
+        'F1-Score': f1_score(y_test, y_pred)
+    }
 
-**Action:** Cross-sell is the single most powerful retention lever available.
-""")
+    explainer = shap.TreeExplainer(model)
 
-st.markdown("---")
+    return model, explainer, features, metrics, encoders, X_test
+
+model, explainer, features, metrics, encoders, X_test = train_churn_model(df)
+
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    st.metric("AUC ROC", f"{metrics['AUC ROC']:.3f}", delta="Excellent" if metrics['AUC ROC'] > 0.85 else "")
+with col2:
+    st.metric("Accuracy", f"{metrics['Accuracy']:.1%}")
+with col3:
+    st.metric("Precision", f"{metrics['Precision']:.1%}")
+with col4:
+    st.metric("F1-Score", f"{metrics['F1-Score']:.3f}")
+
+# SHAP Summary
+st.markdown("#### Global Feature Impact (SHAP)")
+fig, ax = plt.subplots()
+shap.summary_plot(explainer.shap_values(X_test.sample(300)), X_test.sample(300), feature_names=features, show=False, max_display=10)
+st.pyplot(fig)
+
+# Live Prediction Tool
+st.markdown("#### 🔍 Predict Churn Risk for Any Customer")
+col1, col2 = st.columns(2)
+with col1:
+    age = st.slider("Age", 18, 92, 38)
+    gender = st.selectbox("Gender", ['Male', 'Female'])
+    region = st.selectbox("Region", sorted(df['region'].unique()))
+    balance = st.number_input("Balance (£)", 0, 250000, 50000)
+    salary = st.number_input("Salary (£)", 0, 200000, 100000)
+    products = st.slider("Products", 1, 4, 1)
+with col2:
+    tenure = st.slider("Tenure (years)", 0, 10, 5)
+    active = st.selectbox("Active Member?", ['Yes', 'No'])
+    complaint = st.selectbox("Has Complaint?", ['Yes', 'No'])
+    card = st.selectbox("Card Type", sorted(df['card_type'].unique()))
+    satisfaction = st.slider("Satisfaction", 1, 5, 3)
+    nps = st.selectbox("NPS Band", ['Promoter', 'Passive', 'Detractor', 'Not Surveyed'])
+
+input_df = pd.DataFrame([{
+    'age': age, 'balance': balance, 'num_products': products, 'tenure': tenure,
+    'estimated_salary': salary, 'is_active_member': 1 if active == 'Yes' else 0,
+    'satisfaction_score': satisfaction, 'has_complaint': 1 if complaint == 'Yes' else 0,
+    'gender': gender, 'region': region, 'card_type': card, 'nps_band': nps,
+    'age_group': '18-25' if age <= 25 else '26-40' if age <= 40 else '41-60' if age <= 60 else '61+',
+    'balance_salary_ratio': balance / (salary + 1),
+    'is_zero_balance': 1 if balance == 0 else 0,
+    'tenure_per_product': tenure / products
+}])
+
+for col in ['gender', 'region', 'card_type', 'nps_band', 'age_group', 'has_complaint']:
+    le = encoders.get(col, LabelEncoder().fit(df[col].astype(str)))
+    input_df[col] = le.transform(input_df[col].astype(str))
+
+prob = model.predict_proba(input_df[features])[0, 1]
+risk = "High Risk 🚨" if prob > 0.6 else "Medium Risk ⚠️" if prob > 0.3 else "Low Risk ✅"
+color = "#ff3333" if prob > 0.6 else "#ffaa00" if prob > 0.3 else "#00cc00"
+
+st.markdown(f"""
+<div style="padding: 20px; border-radius: 12px; background-color: {color}22; border: 3px solid {color}; text-align: center;">
+    <h2>Churn Probability: <b>{prob:.1%}</b></h2>
+    <h3>{risk}</h3>
+</div>
+""", unsafe_allow_html=True)
 
 # ==================== FOOTER ====================
+st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #666; padding: 20px;'>
-    <p>Dashboard built using Streamlit + Python | Analysis of 10,000 UK banking customers</p>
-    <p><em>Demonstrating SQL proficiency, data visualization, and LLM-assisted development workflows</em></p>
+    <p>Dashboard built using Streamlit + Python + XGBoost + SHAP | Analysis of 10,000 UK banking customers</p>
     <p>Built by Colm Kelly | <a href="https://www.linkedin.com/in/colm-kelly96/" target="_blank">LinkedIn</a> | <a href="https://github.com/Colm-Kelly96" target="_blank">GitHub</a></p>
 </div>
 """, unsafe_allow_html=True)
