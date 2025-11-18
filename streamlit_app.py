@@ -96,7 +96,7 @@ fig.add_trace(go.Bar(
 ))
 
 fig.update_layout(
-    title="📉 Churned Customers by Volume ‼️",
+    title="💥 Churned Customers by Volume",
     xaxis_title="Churned Customers",
     yaxis_title="Churn Driver",
     yaxis=dict(tickmode='linear'),
