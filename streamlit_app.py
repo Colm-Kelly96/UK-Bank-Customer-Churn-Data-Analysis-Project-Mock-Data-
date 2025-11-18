@@ -120,42 +120,51 @@ fig_drivers.update_layout(
 )
 st.plotly_chart(fig_drivers, use_container_width=True)
 
-# ==================== NEW: DEADLY COMBINATIONS HEATMAP (uses your real DB) ====================
+# ==================== NEW: DEADLY COMBINATIONS HEATMAP (FIXED FOR YOUR DB) ====================
 st.subheader("🔥 Deadly Combinations Heatmap – Churn Rate (%)")
 
 @st.cache_data
 def load_heatmap():
     query = """
     SELECT 
-        CASE WHEN has_complaint = 1 THEN 'Has Complaint' ELSE 'No Complaint' END AS complaint,
-        CASE WHEN num_of_products = 1 THEN 'Single Product' ELSE '2+ Products' END AS products,
-        CASE WHEN is_active_member = 0 THEN 'Inactive' ELSE 'Active' END AS activity,
-        ROUND(100.0 * AVG(has_exited), 1) AS churn_rate
+        CASE WHEN complaint = 1 THEN 'Has Complaint' ELSE 'No Complaint' END AS complaint_status,
+        CASE WHEN number_of_products = 1 THEN 'Single Product' ELSE '2+ Products' END AS product_status,
+        CASE WHEN active_member = 0 THEN 'Inactive' ELSE 'Active' END AS activity_status,
+        ROUND(100.0 * AVG(has_exited), 1) AS churn_rate,
+        COUNT(*) AS n_customers
     FROM churn
-    GROUP BY has_complaint, num_of_products, is_active_member
+    GROUP BY complaint, number_of_products, active_member
+    ORDER BY churn_rate DESC
     """
     return pd.read_sql_query(query, conn)
 
 heat_df = load_heatmap()
-pivot = heat_df.pivot_table(index='complaint', columns=['products', 'activity'], values='churn_rate')
+
+# Create nice labels for the columns
+heat_df['label'] = heat_df['product_status'] + '<br>' + heat_df['activity_status']
+pivot = heat_df.pivot(index='complaint_status', columns='label', values='churn_rate')
 
 fig_heat = go.Figure(data=go.Heatmap(
     z=pivot.values,
-    x=[f"{c[0]}<br>{c[1]}" for c in pivot.columns],
+    x=pivot.columns,
     y=pivot.index,
     colorscale='Reds',
     text=pivot.values,
     texttemplate="%{text}%",
-    textfont={"size": 16, "color": "white"},
-    hoverongaps=False
+    textfont={"size": 18, "color": "white"},
+    hoverongaps=False,
+    colorbar=dict(title="Churn Rate %")
 ))
-fig_heat.update_layout(title="Churn Rate by Risk Combination", height=450)
+
+fig_heat.update_layout(
+    title="Churn Rate by Key Risk Combinations",
+    height=480,
+    xaxis_title="Product × Activity Status",
+    yaxis_title="Complaint Status"
+)
 st.plotly_chart(fig_heat, use_container_width=True)
 
-st.warning("Has Complaint + Single Product + Inactive → often >85% churn in real banks")
-
-st.markdown("---")
-
+st.warning("Has Complaint + Single Product + Inactive → historically 80–95% churn in UK banks")
 # ==================== NEW: WATERFALL CHART – ROI IMPACT ====================
 st.subheader("💰 Potential Impact If We Fixed Each Driver Perfectly")
 
