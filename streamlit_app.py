@@ -210,7 +210,7 @@ st.markdown("---")
 st.subheader("💡 Business Recommendations")
 
 st.markdown("""
-### Immediate Actions (0-30 days)
+### Priorty Actions
 
 1. **Cross-Sell Blitz**  
 _Target:_ 4,734 single-product customers  
