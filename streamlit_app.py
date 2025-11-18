@@ -32,6 +32,12 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+st.markdown("""
+<a href="#recommended-retention-strategy" style="font-size:16px; text-decoration:none; color:#007bff;">
+🔥 Actionable Recommendations
+</a>
+""", unsafe_allow_html=True)
+
 st.subheader("📊 Executive Overview")
 col1, col2, col3, col4 = st.columns(4)
 
