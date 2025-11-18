@@ -18,7 +18,7 @@ Interactive data analysis dashboard built to demonstrate advanced SQL, Python, a
 
 Analysis of 10,000 UK banking customers to identify churn drivers and optimize retention strategy. Key findings:
 
-- **36.9% churn rate** for single-product customers (6x baseline)
+- **36.9% churn rate** for single-product customers
 - **65% churn rate** for customers with unresolved complaints
 - **High-risk segments identified**: 2,545 customers requiring immediate intervention
 - **ROI projection**: ~1,800 customers saved through targeted campaigns
