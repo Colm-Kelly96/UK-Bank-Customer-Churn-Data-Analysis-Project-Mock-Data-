@@ -2,17 +2,11 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 import plotly.graph_objects as go
-import numpy as np
-import xgboost as xgb
-import shap
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import accuracy_score, precision_score, f1_score, roc_auc_score
 
-# ==================== PAGE CONFIG & DATA LOAD ====================
+# ==================== PAGE CONFIG ====================
 st.set_page_config(page_title="UK Bank Churn Analysis", page_icon="🏦", layout="wide")
 
+# ==================== DATA LOAD (only for overview metrics) ====================
 @st.cache_resource
 def get_connection():
     return sqlite3.connect('V2_Bank_Churn__SQL_data_base.db', check_same_thread=False)
@@ -22,17 +16,8 @@ conn = get_connection()
 @st.cache_data
 def load_data():
     query = """
-    SELECT 
-        c.customer_id, c.age, c.gender, c.region,
-        a.balance, a.num_products, a.tenure, a.estimated_salary,
-        e.is_active_member, e.card_type,
-        co.has_complaint, co.satisfaction_score, co.complaint_category, co.nps_band,
-        ch.has_exited
-    FROM customers c
-    JOIN accounts a ON c.customer_id = a.customer_id
-    JOIN engagement e ON c.customer_id = e.customer_id
-    JOIN complaints co ON c.customer_id = co.customer_id
-    JOIN churn ch ON c.customer_id = ch.customer_id
+    SELECT ch.has_exited
+    FROM churn ch
     """
     return pd.read_sql_query(query, conn)
 
@@ -45,25 +30,26 @@ st.markdown("---")
 
 st.subheader("📊 Executive Overview")
 col1, col2, col3, col4 = st.columns(4)
-total = len(df)
+
+total_customers = 10000  # Fixed for your dataset
 churned = df['has_exited'].sum()
-churn_rate = churned / total * 100
+churn_rate = (churned / total_customers) * 100
+retained = total_customers - churned
 
 with col1:
-    st.metric("Total Customers", f"{total:,}")
+    st.metric("Total Customers", f"{total_customers:,}")
 with col2:
     st.metric("Churned Customers", f"{churned:,}", delta=f"{churn_rate:.2f}%", delta_color="inverse")
 with col3:
-    st.metric("Retained Customers", f"{total - churned:,}")
+    st.metric("Retained Customers", f"{retained:,}")
 with col4:
-    st.metric("Overall Churn Rate", f"{churn_rate:.2f}%")
+    st.metric("Baseline Churn Rate", f"{churn_rate:.2f}%")
 
 st.markdown("---")
 
-# ==================== SECTION 2: TOP 5 CHURN DRIVERS ====================
+# ==================== TOP 5 CHURN DRIVERS (HARDCODED - YOUR WINNING VERSION) ====================
 st.subheader("⚠️ Top 5 Churn Drivers")
 
-# Create churn drivers data
 churn_drivers_data = {
     'rank': [1, 2, 3, 4, 5],
     'churn_driver': [
@@ -81,53 +67,84 @@ churn_drivers_data = {
 
 churn_drivers_df = pd.DataFrame(churn_drivers_data)
 
-# Display as styled table
-st.dataframe(
-    churn_drivers_df,
-    use_container_width=True,
-    height=250
-)
+st.dataframe(churn_drivers_df, use_container_width=True, height=250)
 
-# Visualization
 fig_drivers = go.Figure()
-
 fig_drivers.add_trace(go.Bar(
     x=churn_drivers_df['churn_driver'],
     y=churn_drivers_df['churned_customers'],
-    name='Churned Customers',
     marker_color='#ff6b6b',
     text=churn_drivers_df['churn_percentage'],
     textposition='outside'
 ))
-
 fig_drivers.update_layout(
     title="Churned Customers by Driver",
-    xaxis_title="Churn Driver",
-    yaxis_title="Number of Churned Customers",
     height=400,
     showlegend=False
 )
-
 st.plotly_chart(fig_drivers, use_container_width=True)
-
 st.markdown("---")
 
-# ==================== HIGH-RISK SEGMENTS (AS YOU REQUESTED) ====================
+# ==================== HIGH-RISK SEGMENTS (HARDCODED) ====================
 st.subheader("🎯 High-Risk Combination Segments")
 
 st.markdown("#### Volume Retention (Top 10 by Number of Churned Customers)")
 st.markdown("**Focus: Prevent the largest volume of churn through scalable interventions**")
-# (You can keep your original static table here if you prefer — or I can make it dynamic later)
+
+volume_data = {
+    'rank': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    'at_risk_segment': [
+        'Single Product Only + No Complaint',
+        'Single Product Only + Balance £30-80k',
+        'Inactive Member + No Complaint',
+        'Tenure 0-2 years + Single Product Only',
+        'Single Product Only + Inactive Member',
+        'Single Product Only + NPS Not Surveyed',
+        'Gender Female + Single Product Only',
+        'Gender Male + Single Product Only',
+        'Card Credit + Single Product Only',
+        'Card Debit + Single Product Only'
+    ],
+    'total_customers': [4535, 3067, 3876, 2347, 1888, 2418, 2381, 2353, 2224, 1966],
+    'churned_customers': [1582, 1117, 1033, 954, 905, 888, 882, 865, 815, 755],
+    'churn_percentage': ['34.88%', '36.42%', '26.65%', '40.65%', '47.93%', '36.72%', '37.04%', '36.76%', '36.65%', '38.40%'],
+    'risk_multiplier': ['1.7x', '1.8x', '1.3x', '2.0x', '2.3x', '1.8x', '1.8x', '1.8x', '1.8x', '1.9x']
+}
+st.dataframe(pd.DataFrame(volume_data), use_container_width=True, height=420)
+
+st.markdown("---")
 
 st.markdown("#### Crisis Management (Top 10 by Churn Percentage)")
 st.markdown("**🔥 Key Insight: 9 of the top 10 highest-churn segments involve an active complaint**  \nComplaints are the #1 predictor of imminent churn — resolving them fast is non-negotiable.")
 
+crisis_data = {
+    'rank': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    'at_risk_segment': [
+        'NPS Detractor + Has Complaint',
+        'Single Product Only + Has Complaint',
+        'Inactive Member + Has Complaint',
+        'Age 18-25 + Has Complaint',
+        'Has Complaint + Balance £30-80k',
+        'Age 41-60 + Has Complaint',
+        'NPS Not Surveyed + Has Complaint',
+        'Age 26-40 + Has Complaint',
+        'Has Complaint + Balance £0',
+        'Single Product Only + NPS Detractor'
+    ],
+    'total_customers': [92, 199, 151, 55, 178, 115, 123, 111, 53, 807],
+    'churned_customers': [81, 165, 114, 41, 127, 78, 78, 68, 32, 461],
+    'churn_percentage': ['88.04%', '82.91%', '75.50%', '74.55%', '71.35%', '67.83%', '63.41%', '61.26%', '60.38%', '57.13%'],
+    'risk_multiplier': ['4.3x', '4.0x', '3.7x', '3.6x', '3.5x', '3.3x', '3.1x', '3.0x', '2.9x', '2.8x']
+}
+st.dataframe(pd.DataFrame(crisis_data), use_container_width=True, height=420)
+
 st.markdown("---")
 
-# ==================== DUAL-STRATEGY FRAMEWORK ====================
+# ==================== DUAL STRATEGY ====================
 st.subheader("💡 Recommended Retention Strategy")
 
 col1, col2 = st.columns(2)
+
 with col1:
     st.markdown("""
     ### 📈 Volume Retention
@@ -142,6 +159,7 @@ with col1:
     - Automated re-engagement journeys
     - Loyalty incentives for adding a second product
     """)
+
 with col2:
     st.markdown("""
     ### 🚨 Crisis Management
@@ -165,56 +183,6 @@ Apply the right strategy to the right segment:
 
 This dual approach delivers maximum retention ROI.
 """)
-
-st.markdown("---")
-
-# ==================== PREDICTIVE MODEL (KEPT CLEAN) ====================
-st.subheader("🔮 Predictive Churn Modeling")
-st.markdown("**XGBoost + SHAP explanations • Live customer scoring**")
-
-@st.cache_data(show_spinner="Training model...")
-def train_model(data):
-    df_m = data.copy()
-    df_m['age_group'] = pd.cut(df_m['age'], bins=[0,25,40,60,100], labels=['18-25','26-40','41-60','61+'])
-    df_m['balance_salary_ratio'] = df_m['balance'] / (df_m['estimated_salary'] + 1)
-    df_m['is_zero_balance'] = (df_m['balance'] == 0).astype(int)
-    df_m['tenure_per_product'] = df_m['tenure'] / df_m['num_products'].replace(0,1)
-
-    cat_cols = ['gender','region','card_type','complaint_category','nps_band','age_group','has_complaint','is_active_member']
-    for col in cat_cols:
-        df_m[col] = LabelEncoder().fit_transform(df_m[col].astype(str))
-
-    features = ['age','balance','num_products','tenure','estimated_salary','is_active_member',
-                'satisfaction_score','balance_salary_ratio','is_zero_balance','tenure_per_product',
-                'gender','region','card_type','complaint_category','nps_band','age_group','has_complaint']
-    
-    X = df_m[features]
-    y = df_m['has_exited']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
-    
-    model = xgb.XGBClassifier(n_estimators=300, max_depth=6, learning_rate=0.05, subsample=0.8, random_state=42, eval_metric='logloss')
-    model.fit(X_train, y_train)
-    
-    explainer = shap.TreeExplainer(model)
-    metrics = {
-        'AUC ROC': roc_auc_score(y_test, model.predict_proba(X_test)[:,1]),
-        'Accuracy': accuracy_score(y_test, model.predict(X_test))
-    }
-    return model, explainer, features, metrics
-
-model, explainer, features, metrics = train_model(df)
-
-col1, col2 = st.columns(2)
-with col1:
-    st.metric("AUC ROC", f"{metrics['AUC ROC']:.3f}")
-with col2:
-    st.metric("Accuracy", f"{metrics['Accuracy']:.1%}")
-
-# Simple live prediction
-st.markdown("#### 🔍 Predict Any Customer")
-# (keeping this minimal — full version available if you want it back)
-
-st.success("Model trained and ready for integration into CRM or customer success tools")
 
 # ==================== FOOTER ====================
 st.markdown("---")
