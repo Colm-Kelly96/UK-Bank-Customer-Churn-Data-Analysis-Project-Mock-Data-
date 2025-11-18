@@ -72,8 +72,8 @@ st.dataframe(churn_drivers_df, use_container_width=True, height=250)
 
 st.markdown("---")
 
-# ==================== 📉 CHURNED CUSTOMERS BY VOLUME ‼️ (Horizontal Ranked Bar + Color Scale) ====================
-st.subheader("📉 Churned Customers by Volume ‼️")
+# ==================== 💥 CHURNED CUSTOMERS BY VOLUME (Horizontal Ranked Bar + Color Scale) ====================
+
 
 # Prepare data ordered by churned customers descending
 churn_drivers_df_sorted = churn_drivers_df.sort_values(by='churned_customers', ascending=True)
