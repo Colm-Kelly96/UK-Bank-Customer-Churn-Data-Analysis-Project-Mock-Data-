@@ -86,39 +86,41 @@ st.plotly_chart(fig_drivers, use_container_width=True)
 st.markdown("---")
 
 # ============================================================
-# ✅ NEW SECTION: CHURNED CUSTOMERS BY VOLUME (HORIZONTAL BAR)
+# 📉 UPDATED: CHURNED CUSTOMERS BY VOLUME (SORTED + COLOUR BY VOLUME)
 # ============================================================
 
 st.subheader("📉 Churned Customers by Volume")
 
-# Convert risk multiplier for colour encoding
-risk_values = churn_drivers_df['risk_multiplier'].str.replace('x', '').astype(float)
+# Sort by churn volume (descending)
+sorted_df = churn_drivers_df.sort_values(by="churned_customers", ascending=False)
+
+# Colour scale based on churn volume
+volume_values = sorted_df["churned_customers"]
 
 fig_volume = go.Figure(go.Bar(
-    x=churn_drivers_df['churned_customers'],
-    y=churn_drivers_df['churn_driver'],
+    x=sorted_df['churned_customers'],
+    y=sorted_df['churn_driver'],
     orientation='h',
     marker=dict(
-        color=risk_values,
+        color=volume_values,
         colorscale='Reds',
         showscale=True,
         colorbar=dict(
-            title="Risk Multiplier",
+            title="Churn Volume",
             thickness=12
         )
     ),
-    text=churn_drivers_df['churn_percentage'],
+    text=sorted_df['churn_percentage'],
     textposition='auto',
     hovertemplate=
         "<b>%{y}</b><br>" +
         "Churned: %{x}<br>" +
         "Churn %: %{text}<br>" +
-        "Risk Multiplier: %{marker.color:.2f}x" +
         "<extra></extra>"
 ))
 
 fig_volume.update_layout(
-    title="Churned Customers by Volume (Colour = Risk Multiplier)",
+    title="Churned Customers by Volume (Colour = Churn Volume)",
     xaxis_title="Churned Customers",
     yaxis_title="Churn Driver",
     height=450,
@@ -126,8 +128,8 @@ fig_volume.update_layout(
 )
 
 st.plotly_chart(fig_volume, use_container_width=True)
-
 st.markdown("---")
+
 
 # ==================== HIGH-RISK SEGMENTS (HARDCODED) ====================
 st.subheader("🎯 High-Risk Combination Segments")
