@@ -120,73 +120,35 @@ fig_drivers.update_layout(
 )
 st.plotly_chart(fig_drivers, use_container_width=True)
 
-# ==================== NEW: DEADLY COMBINATIONS HEATMAP (FIXED FOR YOUR DB) ====================
-st.subheader("🔥 Deadly Combinations Heatmap – Churn Rate (%)")
-
-@st.cache_data
-def load_heatmap():
-    query = """
-    SELECT 
-        CASE WHEN complaint = 1 THEN 'Has Complaint' ELSE 'No Complaint' END AS complaint_status,
-        CASE WHEN number_of_products = 1 THEN 'Single Product' ELSE '2+ Products' END AS product_status,
-        CASE WHEN active_member = 0 THEN 'Inactive' ELSE 'Active' END AS activity_status,
-        ROUND(100.0 * AVG(has_exited), 1) AS churn_rate,
-        COUNT(*) AS n_customers
-    FROM churn
-    GROUP BY complaint, number_of_products, active_member
-    ORDER BY churn_rate DESC
-    """
+pandas.errors.DatabaseError: This app has encountered an error. The original error message is redacted to prevent data leaks. Full error details have been recorded in the logs (if you're on Streamlit Cloud, click on 'Manage app' in the lower right of your app).
+Traceback:
+File "/mount/src/uk-bank-customer-churn-data-analysis-project-mock-data-/streamlit_app.py", line 141, in <module>
+    heat_df = load_heatmap()
+File "/home/adminuser/venv/lib/python3.13/site-packages/streamlit/runtime/caching/cache_utils.py", line 228, in __call__
+    return self._get_or_create_cached_value(args, kwargs, spinner_message)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/adminuser/venv/lib/python3.13/site-packages/streamlit/runtime/caching/cache_utils.py", line 270, in _get_or_create_cached_value
+    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/adminuser/venv/lib/python3.13/site-packages/streamlit/runtime/caching/cache_utils.py", line 329, in _handle_cache_miss
+    computed_value = self._info.func(*func_args, **func_kwargs)
+File "/mount/src/uk-bank-customer-churn-data-analysis-project-mock-data-/streamlit_app.py", line 139, in load_heatmap
     return pd.read_sql_query(query, conn)
-
-heat_df = load_heatmap()
-
-# Create nice labels for the columns
-heat_df['label'] = heat_df['product_status'] + '<br>' + heat_df['activity_status']
-pivot = heat_df.pivot(index='complaint_status', columns='label', values='churn_rate')
-
-fig_heat = go.Figure(data=go.Heatmap(
-    z=pivot.values,
-    x=pivot.columns,
-    y=pivot.index,
-    colorscale='Reds',
-    text=pivot.values,
-    texttemplate="%{text}%",
-    textfont={"size": 18, "color": "white"},
-    hoverongaps=False,
-    colorbar=dict(title="Churn Rate %")
-))
-
-fig_heat.update_layout(
-    title="Churn Rate by Key Risk Combinations",
-    height=480,
-    xaxis_title="Product × Activity Status",
-    yaxis_title="Complaint Status"
-)
-st.plotly_chart(fig_heat, use_container_width=True)
-
-st.warning("Has Complaint + Single Product + Inactive → historically 80–95% churn in UK banks")
-# ==================== NEW: WATERFALL CHART – ROI IMPACT ====================
-st.subheader("💰 Potential Impact If We Fixed Each Driver Perfectly")
-
-fig_waterfall = go.Figure(go.Waterfall(
-    orientation="v",
-    measure=["absolute", "relative", "relative", "relative", "relative", "total"],
-    x=["Baseline", "Fix Complaints", "Cross-sell Products", "Re-engage Inactive", "Target Young", "Achievable"],
-    y=[20.37, -6.8, -5.1, -3.2, -1.1, 0],
-    textposition="outside",
-    text=["20.4%", "-6.8 pp", "-5.1 pp", "-3.2 pp", "-1.1 pp", "4.2%"],
-    connector={"line": {"color": "rgb(63, 63, 63)"}},
-    increasing={"marker": {"color": "#00b894"}},
-    decreasing={"marker": {"color": "#636e72"}},
-    totals={"marker": {"color": "#0984e3"}}
-))
-fig_waterfall.update_layout(title="Realistic intervention on top 2 drivers → churn could drop to ~8.5% (–58%)", height=520)
-st.plotly_chart(fig_waterfall, use_container_width=True)
-
-st.success("For a bank the size of Allica, this could save £4–7m per year")
-
-st.markdown("---")
-
+           ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+File "/home/adminuser/venv/lib/python3.13/site-packages/pandas/io/sql.py", line 528, in read_sql_query
+    return pandas_sql.read_query(
+           ~~~~~~~~~~~~~~~~~~~~~^
+        sql,
+        ^^^^
+    ...<6 lines>...
+        dtype_backend=dtype_backend,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+File "/home/adminuser/venv/lib/python3.13/site-packages/pandas/io/sql.py", line 2728, in read_query
+    cursor = self.execute(sql, params)
+File "/home/adminuser/venv/lib/python3.13/site-packages/pandas/io/sql.py", line 2676, in execute
+    raise ex from exc
 # ==================== HIGH-RISK SEGMENTS (100% UNCHANGED – your original tables) ====================
 st.subheader("🎯 High-Risk Combination Segments")
 st.markdown("#### Volume Retention (Top 10 by Number of Churned Customers)")
