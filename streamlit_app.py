@@ -151,8 +151,8 @@ with col1:
     **Goal: Reduce churn at scale**
 
     **Primary Target Segments:**
-    - Single Product + Any Other Trait  
-    - Inactive Member + Any Other Trait  
+    - Single Product   
+    - Inactive Member 
 
     **Recommended Actions:**
     - Cross-sell & product bundling campaigns
@@ -166,7 +166,7 @@ with col2:
     **Goal: Stop customers about to leave now**
 
     **Primary Target Segments:**
-    - Has Active Complaint + Any Other Trait  
+    - Has Active Complaint  
 
     **Recommended Actions:**
     - 48-hour complaint resolution SLA
@@ -177,9 +177,8 @@ with col2:
 
 st.info("""
 **Core Principle:**  
-→ **Single-product and inactive customers → fix at scale with proactive programmes  
-→ **Complaining customers → fix immediately with reactive retention 
-Execute both tracks in parallel for maximum ROI
+→ Single-product and inactive customers → fix at scale with proactive programmes  
+→ Complaining customers → fix immediately with reactive retention 
 
 This dual approach delivers maximum retention ROI.
 """)
