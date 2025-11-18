@@ -67,46 +67,23 @@ churn_drivers_data = {
 
 churn_drivers_df = pd.DataFrame(churn_drivers_data)
 
-# ==================== CHURNED CUSTOMERS BY VOLUME (UPDATED VISUAL) ====================
+st.dataframe(churn_drivers_df, use_container_width=True, height=250)
 
-st.subheader("📉 Churned Customers by Volume")
-
-# Prepare colour scale values from risk multiplier
-risk_values = churn_drivers_df['risk_multiplier'].str.replace('x', '').astype(float)
-
-fig_drivers = go.Figure(go.Bar(
-    x=churn_drivers_df['churned_customers'],     # volume on X
-    y=churn_drivers_df['churn_driver'],          # segment on Y
-    orientation='h',                              # horizontal bar
-    marker=dict(
-        color=risk_values,
-        colorscale='Reds',
-        showscale=True,
-        colorbar=dict(
-            title="Risk Multiplier",
-            thickness=12
-        )
-    ),
+fig_drivers = go.Figure()
+fig_drivers.add_trace(go.Bar(
+    x=churn_drivers_df['churn_driver'],
+    y=churn_drivers_df['churned_customers'],
+    marker_color='#ff6b6b',
     text=churn_drivers_df['churn_percentage'],
-    textposition='auto',
-    hovertemplate=
-        "<b>%{y}</b><br>" +
-        "Churned: %{x}<br>" +
-        "Churn %: %{text}<br>" +
-        "Risk Multiplier: %{marker.color:.2f}x" +
-        "<extra></extra>"
+    textposition='outside'
 ))
-
 fig_drivers.update_layout(
-    title="Churned Customers by Volume (Colour = Risk Multiplier)",
-    xaxis_title="Churned Customers",
-    yaxis_title="Churn Driver",
-    height=450,
-    margin=dict(l=120, r=20, t=60, b=40)
+    title="Churned Customers by Driver",
+    height=400,
+    showlegend=False
 )
-
 st.plotly_chart(fig_drivers, use_container_width=True)
-
+st.markdown("---")
 
 # ==================== HIGH-RISK SEGMENTS (HARDCODED) ====================
 st.subheader("🎯 High-Risk Combination Segments")
