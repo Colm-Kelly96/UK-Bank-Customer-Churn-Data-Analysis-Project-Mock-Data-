@@ -47,26 +47,43 @@ with col4:
 
 st.markdown("---")
 
-# Conditional colours — complaint = bright red, others softer
-colors = ['#c0392b' if 'Complaint' in d else '#e67e22' for d in churn_drivers_df['churn_driver']]
+# ==================== TOP 5 CHURN DRIVERS (HARDCODED - YOUR WINNING VERSION) ====================
+st.subheader("⚠️ Top 5 Churn Drivers")
 
-fig_drivers = go.Figure(go.Bar(
-    x=churn_drivers_df['churned_customers'],
-    y=churn_drivers_df['churn_driver'],
-    orientation='h',
-    marker_color=colors,
+churn_drivers_data = {
+    'rank': [1, 2, 3, 4, 5],
+    'churn_driver': [
+        'Has Complaint: Yes',
+        'Number of Products: 1',
+        'NPS Band: Detractor',
+        'Active Member: No',
+        'Age Group: 18-25'
+    ],
+    'churn_percentage': ['65.00%', '36.90%', '35.67%', '28.48%', '26.49%'],
+    'risk_multiplier': ['3.16x', '1.79x', '1.73x', '1.38x', '1.29x'],
+    'total_customers': [300, 4734, 1643, 4027, 1412],
+    'churned_customers': [195, 1747, 586, 1147, 374]
+}
+
+churn_drivers_df = pd.DataFrame(churn_drivers_data)
+
+st.dataframe(churn_drivers_df, use_container_width=True, height=250)
+
+fig_drivers = go.Figure()
+fig_drivers.add_trace(go.Bar(
+    x=churn_drivers_df['churn_driver'],
+    y=churn_drivers_df['churned_customers'],
+    marker_color='#ff6b6b',
     text=churn_drivers_df['churn_percentage'],
-    textposition='outside',
-    hovertemplate='<b>%{y}</b><br>Churned: %{x:,}<br>Rate: %{text}<extra></extra>'
+    textposition='outside'
 ))
 fig_drivers.update_layout(
-    title="Top 5 Churn Drivers — Ranked by Volume Impact",
-    xaxis_title="Churned Customers",
-    height=420,
-    showlegend=False,
-    yaxis={'categoryorder': 'total ascending'}
+    title="Churned Customers by Driver",
+    height=400,
+    showlegend=False
 )
 st.plotly_chart(fig_drivers, use_container_width=True)
+st.markdown("---")
 
 # ==================== HIGH-RISK SEGMENTS (HARDCODED) ====================
 st.subheader("🎯 High-Risk Combination Segments")
