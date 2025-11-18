@@ -204,26 +204,59 @@ st.info("""
 This dual approach delivers maximum retention ROI.
 """)
 
-# ==================== FUNNEL VISUALIZATION ====================
-fig = go.Figure()
+# Calculate total customers for volume retention and crisis management
+volume_total_customers = sum(volume_data['total_customers'])
+crisis_total_customers = sum(crisis_data['total_customers'])
 
-# Funnel rectangles: wide top (Volume Retention), narrow bottom (Crisis Management)
-fig.add_shape(type="rect", x0=0, y0=0, x1=1, y1=0.4, fillcolor="lightblue", line=dict(color="blue"))
-fig.add_shape(type="rect", x0=0.3, y0=0.4, x1=0.7, y1=1, fillcolor="salmon", line=dict(color="red"))
+# Normalize funnel widths (max width = 1.0 for volume)
+max_width = 1.0
+volume_width = max_width
+crisis_width = crisis_total_customers / volume_total_customers
 
-# Add annotations for sections
-fig.add_annotation(x=0.5, y=0.2, text="📈 Volume Retention\n(Big segments)", showarrow=False, font=dict(size=14))
-fig.add_annotation(x=0.5, y=0.7, text="🚨 Crisis Management\n(Small urgent segments)", showarrow=False, font=dict(size=14))
+# Draw funnel with relative widths
+import plotly.graph_objects as go
 
-fig.update_layout(
+fig_funnel = go.Figure()
+
+# Volume Retention (wider base)
+fig_funnel.add_shape(type="rect",
+                     x0=0, x1=volume_width,
+                     y0=0.5, y1=1,
+                     line=dict(color="RoyalBlue"),
+                     fillcolor="RoyalBlue",
+                     opacity=0.6,
+                     layer="below")
+
+fig_funnel.add_annotation(x=volume_width / 2, y=0.75,
+                          text=f"Volume Retention<br>{volume_total_customers:,} Customers",
+                          showarrow=False,
+                          font=dict(size=16, color="white"))
+
+# Crisis Management (narrower top)
+fig_funnel.add_shape(type="rect",
+                     x0=(max_width - crisis_width)/2, x1=(max_width + crisis_width)/2,
+                     y0=0, y1=0.5,
+                     line=dict(color="Crimson"),
+                     fillcolor="Crimson",
+                     opacity=0.6,
+                     layer="below")
+
+fig_funnel.add_annotation(x=max_width / 2, y=0.25,
+                          text=f"Crisis Management<br>{crisis_total_customers:,} Customers",
+                          showarrow=False,
+                          font=dict(size=16, color="white"))
+
+fig_funnel.update_layout(
+    title="🎯 Dual Retention Strategy Funnel",
+    xaxis=dict(visible=False, range=[0, max_width]),
+    yaxis=dict(visible=False, range=[0, 1]),
     height=300,
-    margin=dict(l=20, r=20, t=20, b=20),
-    xaxis=dict(visible=False, range=[0,1]),
-    yaxis=dict(visible=False, range=[0,1]),
-    plot_bgcolor="white"
+    margin=dict(l=20, r=20, t=40, b=20),
+    paper_bgcolor='white'
 )
 
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig_funnel, use_container_width=True)
+
 
 # ==================== FOOTER ====================
 st.markdown("---")
