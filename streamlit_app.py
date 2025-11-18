@@ -24,6 +24,7 @@ def load_data():
     query = """
     SELECT 
         c.customer_id,
+        c.surname,
         c.age,
         c.gender,
         c.region,
@@ -35,6 +36,9 @@ def load_data():
         e.card_type,
         co.has_complaint,
         co.satisfaction_score,
+        co.complaint_date,
+        co.complaint_category,
+        co.nps_response,
         co.nps_band,
         ch.has_exited
     FROM customers c
@@ -52,13 +56,11 @@ baseline_churn = (df['has_exited'].sum() / len(df)) * 100
 
 # Title
 st.title("🏦 UK Bank Customer Churn Analysis")
-st.markdown("### Executive Dashboard - Strategic Insights for Retention")
+st.markdown("### Strategic Retention Insights Dashboard")
 st.markdown("---")
 
-# =============================================================================
-# SECTION 1: EXECUTIVE OVERVIEW
-# =============================================================================
-st.header("📊 Executive Overview")
+# ==================== SECTION 1: OVERVIEW ====================
+st.subheader("📊 Executive Overview")
 
 col1, col2, col3, col4 = st.columns(4)
 
@@ -70,18 +72,16 @@ retained = total_customers - churned
 with col1:
     st.metric("Total Customers", f"{total_customers:,}")
 with col2:
-    st.metric("Churn Rate", f"{churn_rate:.2f}%", delta=f"-{churned:,} lost", delta_color="inverse")
+    st.metric("Churned Customers", f"{churned:,}", delta=f"{churn_rate:.2f}%", delta_color="inverse")
 with col3:
-    st.metric("Churned Customers", f"{churned:,}")
+    st.metric("Retained Customers", f"{retained:,}", delta=f"{100-churn_rate:.2f}%", delta_color="normal")
 with col4:
-    st.metric("Retained Customers", f"{retained:,}")
+    st.metric("Baseline Churn Rate", f"{churn_rate:.2f}%")
 
 st.markdown("---")
 
-# =============================================================================
-# SECTION 2: TOP 5 CHURN DRIVERS
-# =============================================================================
-st.header("⚠️ Top 5 Churn Drivers")
+# ==================== SECTION 2: TOP 5 CHURN DRIVERS ====================
+st.subheader("⚠️ Top 5 Churn Drivers")
 
 # Create churn drivers data
 churn_drivers_data = {
@@ -100,29 +100,29 @@ churn_drivers_data = {
 
 churn_drivers_df = pd.DataFrame(churn_drivers_data)
 
-# Display as formatted table
+# Display as styled table
 st.dataframe(
-    churn_drivers_df.style.background_gradient(subset=['churned_customers'], cmap='Reds'),
+    churn_drivers_df,
     use_container_width=True,
     height=250
 )
 
-# Visualize top drivers
+# Visualization
 fig_drivers = go.Figure()
 
 fig_drivers.add_trace(go.Bar(
-    name='Churned',
     x=churn_drivers_df['churn_driver'],
     y=churn_drivers_df['churned_customers'],
+    name='Churned Customers',
     marker_color='#ff6b6b',
-    text=churn_drivers_df['churned_customers'],
-    textposition='auto',
+    text=churn_drivers_df['churn_percentage'],
+    textposition='outside'
 ))
 
 fig_drivers.update_layout(
     title="Churned Customers by Driver",
     xaxis_title="Churn Driver",
-    yaxis_title="Churned Customers",
+    yaxis_title="Number of Churned Customers",
     height=400,
     showlegend=False
 )
@@ -131,19 +131,18 @@ st.plotly_chart(fig_drivers, use_container_width=True)
 
 st.markdown("---")
 
-# =============================================================================
-# SECTION 3: AT-RISK SEGMENTS (COMBO VARIABLES)
-# =============================================================================
-st.header("🎯 High-Risk Customer Segments (Combination Analysis)")
+# ==================== SECTION 3: HIGH-RISK COMBO SEGMENTS ====================
+st.subheader("🎯 High-Risk Combination Segments")
 
-st.subheader("Strategy A: Volume Retention (Priority Score 8-10)")
-st.markdown("**Target for broad campaigns and cross-sell programs**")
+st.markdown("#### Top 10 At-Risk Segments by Priority Score")
+st.markdown("*Priority Score = Churned Customers × Risk Multiplier*")
 
-volume_segments = {
+# Top 10 by priority score
+combo_priority_data = {
     'at_risk_segment': [
         'Single Product Only + No Complaint',
         'Single Product Only + Inactive Member',
-        'Single Product Only + Balance £30-80k',
+        'Single Product Only + Balance £30-80k (Medium)',
         'Tenure 0-2 years + Single Product Only',
         'Single Product Only + NPS Not Surveyed',
         'Gender Female + Single Product Only',
@@ -156,37 +155,30 @@ volume_segments = {
     'churned_customers': [1582, 905, 1117, 954, 888, 882, 865, 815, 755, 1033],
     'churn_percentage': ['34.88%', '47.93%', '36.42%', '40.65%', '36.72%', '37.04%', '36.76%', '36.65%', '38.40%', '26.65%'],
     'risk_multiplier': ['1.7x', '2.3x', '1.8x', '2.0x', '1.8x', '1.8x', '1.8x', '1.8x', '1.9x', '1.3x'],
-    'priority_score': [10, 7.8, 7.4, 7.0, 5.9, 5.9, 5.7, 5.4, 5.2, 5.0]
+    'priority_score': [10.0, 7.8, 7.4, 7.0, 5.9, 5.9, 5.7, 5.4, 5.2, 5.0]
 }
 
-volume_df = pd.DataFrame(volume_segments)
+combo_priority_df = pd.DataFrame(combo_priority_data)
 
 st.dataframe(
-    volume_df.style.background_gradient(subset=['priority_score'], cmap='YlOrRd'),
+    combo_priority_df,
     use_container_width=True,
     height=400
 )
 
-col1, col2 = st.columns(2)
-with col1:
-    st.metric("Total At-Risk (Volume)", f"{volume_df['total_customers'].sum():,}")
-with col2:
-    st.metric("Expected Churn (No Action)", f"{volume_df['churned_customers'].sum():,}")
-
-st.markdown("**💡 Recommendation:** Cross-sell campaign with fee waivers, engagement initiatives → Expected savings: **~1,500 customers**")
-
 st.markdown("---")
 
-st.subheader("Strategy B: Crisis Management (Churn Rate 65%+)")
-st.markdown("**Emergency complaint resolution - Critical for brand reputation**")
+st.markdown("#### Top 6 Crisis Segments by Churn Rate (65%+)")
+st.markdown("*Critical: Requires immediate intervention*")
 
-crisis_segments = {
+# Top 6 by churn percentage
+combo_crisis_data = {
     'at_risk_segment': [
         'NPS Detractor + Has Complaint',
         'Single Product Only + Has Complaint',
         'Inactive Member + Has Complaint',
         'Age 18-25 + Has Complaint',
-        'Has Complaint + Balance £30-80k',
+        'Has Complaint + Balance £30-80k (Medium)',
         'Age 41-60 + Has Complaint'
     ],
     'total_customers': [92, 199, 151, 55, 178, 115],
@@ -196,145 +188,138 @@ crisis_segments = {
     'priority_score': [1.2, 2.4, 1.5, 0.5, 1.6, 0.9]
 }
 
-crisis_df = pd.DataFrame(crisis_segments)
+combo_crisis_df = pd.DataFrame(combo_crisis_data)
 
 st.dataframe(
-    crisis_df.style.background_gradient(subset=['churn_percentage'], cmap='Reds'),
+    combo_crisis_df,
     use_container_width=True,
     height=300
 )
 
-col1, col2 = st.columns(2)
-with col1:
-    st.metric("Total At-Risk (Crisis)", f"{crisis_df['total_customers'].sum():,}")
-with col2:
-    st.metric("Expected Churn (No Action)", f"{crisis_df['churned_customers'].sum():,}")
-
-st.markdown("**💡 Recommendation:** 48-hour complaint resolution SLA, dedicated support queue → Fix systemic issue causing 70-88% churn")
-
 st.markdown("---")
 
-# =============================================================================
-# SECTION 4: STRATEGIC RECOMMENDATIONS
-# =============================================================================
-st.header("💡 Strategic Recommendations")
+# ==================== SECTION 4: STRATEGY RECOMMENDATIONS ====================
+st.subheader("💡 Dual-Strategy Retention Framework")
 
 col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("🎯 Strategy A: Volume Retention")
     st.markdown("""
-    **Target:** Single Product + No Complaint, Single Product + Inactive, etc.
+    ### 📈 Strategy A: Volume Retention
+    **Priority Score 8-10 Segments**
+    
+    **Target Segments:**
+    - Single Product + No Complaint (1,582 churned)
+    - Single Product + Inactive (905 churned)
+    - Single Product + Medium Balance (1,117 churned)
     
     **Actions:**
-    - Broad cross-sell campaigns with incentives
-    - Re-engagement programs (push notifications, gamification)
-    - Fee waivers for 2nd product adoption
-    - Digital engagement initiatives
+    - Broad cross-sell campaigns
+    - Product bundling incentives
+    - Re-engagement initiatives
+    - Proactive outreach programs
     
     **Expected Impact:**
-    - Save **~1,500+ customers**
-    - Revenue protection: **£37.5M** (£25K LTV × 1,500)
-    - ROI: High volume, moderate intervention cost
+    - Save 1,500+ customers annually
+    - High-volume, moderate intervention cost
+    - ROI: Strong due to scale
     
-    **Timeline:** 0-90 days
+    **Timeline:** 0-3 months for rollout
     """)
 
 with col2:
-    st.subheader("🚨 Strategy B: Crisis Management")
     st.markdown("""
-    **Target:** Any segment with "Has Complaint"
+    ### 🚨 Strategy B: Crisis Management
+    **Churn Rate 65%+ Segments**
+    
+    **Target Segments:**
+    - NPS Detractor + Has Complaint (88% churn)
+    - Single Product + Has Complaint (83% churn)
+    - Any segment with complaints (70%+ churn)
     
     **Actions:**
-    - Emergency complaint resolution process overhaul
-    - 48-hour resolution SLA for all complaints
-    - Dedicated priority support queue
-    - Root cause analysis by complaint category
-    - Proactive outreach to complainers
+    - Emergency complaint resolution overhaul
+    - 48-hour resolution SLA
+    - Root cause analysis by category
+    - Process improvement initiatives
     
     **Expected Impact:**
-    - Fix systemic issue (70-88% churn rate)
+    - Fix systemic issues
+    - Protect brand reputation
     - Prevent future complaints
-    - Critical for **brand reputation**
-    - Smaller numbers but highest urgency
     
     **Timeline:** Immediate (0-30 days)
     """)
 
 st.markdown("---")
 
-# =============================================================================
-# SECTION 5: TOP RETENTION DRIVERS
-# =============================================================================
-st.header("✅ Top 3 Retention Drivers - What Keeps Customers")
+st.info("""
+**Strategic Insight:** Your priority score formula optimally balances BOTH strategies:
+- **High priority scores** (8-10) = volume opportunity → broad retention campaigns
+- **High churn rates** (65%+) = crisis segments → emergency interventions
 
-retention_data = {
-    'retention_driver': [
-        'Multi-Product (2-4 products)',
-        'NPS Promoter',
-        'Long Tenure (11-15 years)'
-    ],
-    'total_customers': [5266, 2140, 666],
-    'churned_customers': [310, 211, 83],
-    'churn_rate': ['5.89%', '9.86%', '12.46%'],
-    'vs_baseline': ['-14.68%', '-10.71%', '-8.11%'],
-    'retention_impact': ['Strong', 'Strong', 'Moderate']
-}
-
-retention_df = pd.DataFrame(retention_data)
-
-st.dataframe(
-    retention_df.style.background_gradient(subset=['churned_customers'], cmap='Greens_r'),
-    use_container_width=True,
-    height=200
-)
-
-# Visualization comparing retention vs churn drivers
-fig_retention = go.Figure()
-
-retention_categories = retention_df['retention_driver'].tolist()
-retention_churn_rates = [5.89, 9.86, 12.46]
-driver_churn_rates = [65.00, 36.90, 35.67]  # Top 3 churn drivers
-
-fig_retention.add_trace(go.Bar(
-    name='Retention Drivers',
-    x=retention_categories,
-    y=retention_churn_rates,
-    marker_color='#51cf66',
-    text=[f"{x:.1f}%" for x in retention_churn_rates],
-    textposition='auto'
-))
-
-fig_retention.add_hline(y=baseline_churn, line_dash="dash", line_color="red", 
-                       annotation_text=f"Baseline: {baseline_churn:.1f}%")
-
-fig_retention.update_layout(
-    title="Retention Driver Effectiveness (Lower is Better)",
-    xaxis_title="Retention Driver",
-    yaxis_title="Churn Rate (%)",
-    height=400,
-    showlegend=False
-)
-
-st.plotly_chart(fig_retention, use_container_width=True)
-
-st.markdown("""
-### 🎯 Key Takeaway: Product Adoption is Critical
-
-Customers with **multiple products** have an **86% lower churn rate** (5.89% vs 36.90%).
-
-**Action:** Make multi-product adoption the #1 KPI for retention strategy.
+This dual approach addresses both operational scale and critical risk management.
 """)
 
 st.markdown("---")
 
-# =============================================================================
-# FOOTER
-# =============================================================================
+# ==================== SECTION 5: TOP 3 RETENTION DRIVERS ====================
+st.subheader("✅ Top Retention Drivers")
+st.markdown("*What keeps customers loyal?*")
+
+# Retention drivers data (combined multi-product)
+retention_combined_data = {
+    'category': ['Number of Products', 'NPS Band', 'Tenure'],
+    'category_value': ['Multi-Product (2+)', 'Promoter', '11-15 years'],
+    'total_customers': [5266, 2140, 666],
+    'churned_customers': [310, 211, 83],
+    'churn_rate_pct': ['5.89%', '9.86%', '12.46%'],
+    'diff_from_avg': ['-14.68%', '-10.71%', '-8.11%'],
+    'correlation_strength': ['Strong', 'Strong', 'Moderate']
+}
+
+retention_combined_df = pd.DataFrame(retention_combined_data)
+
+st.dataframe(
+    retention_combined_df,
+    use_container_width=True,
+    height=200
+)
+
+# Visualization
+fig_retention = go.Figure()
+
+fig_retention.add_trace(go.Bar(
+    y=retention_combined_df['category_value'],
+    x=retention_combined_df['churned_customers'],
+    orientation='h',
+    marker_color='#51cf66',
+    text=retention_combined_df['churn_rate_pct'],
+    textposition='outside'
+))
+
+fig_retention.update_layout(
+    title="Retention Driver Performance",
+    xaxis_title="Churned Customers (Lower = Better)",
+    yaxis_title="Retention Driver",
+    height=350
+)
+
+st.plotly_chart(fig_retention, use_container_width=True)
+
+st.success("""
+**Key Insight:** Customers with 2+ products have a churn rate of just 5.89% - that's **71% lower** than single-product customers (36.9%). 
+
+**Action:** Cross-sell is the single most powerful retention lever available.
+""")
+
+st.markdown("---")
+
+# ==================== FOOTER ====================
 st.markdown("""
 <div style='text-align: center; color: #666; padding: 20px;'>
-    <p><strong>UK Bank Customer Churn Analysis Dashboard</strong></p>
-    <p>Built using SQL, Python (Streamlit/Plotly), and LLM-assisted development workflows</p>
-    <p>Data: 10,000 UK banking customers | 5 normalized tables | 20.57% baseline churn rate</p>
+    <p>Dashboard built using Streamlit + Python | Analysis of 10,000 UK banking customers</p>
+    <p><em>Demonstrating SQL proficiency, data visualization, and LLM-assisted development workflows</em></p>
+    <p>Built by Colm Kelly | <a href="https://www.linkedin.com/in/colm-kelly96/" target="_blank">LinkedIn</a> | <a href="https://github.com/Colm-Kelly96" target="_blank">GitHub</a></p>
 </div>
 """, unsafe_allow_html=True)
