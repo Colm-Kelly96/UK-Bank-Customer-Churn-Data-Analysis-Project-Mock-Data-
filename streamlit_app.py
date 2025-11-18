@@ -47,6 +47,7 @@ with col4:
 
 st.markdown("---")
 
+
 # ==================== TOP 5 CHURN DRIVERS (TABLE ONLY - HARDCODED) ====================
 st.subheader("⚠️ Top 5 Churn Drivers")
 
@@ -203,60 +204,6 @@ st.info("""
 
 This dual approach delivers maximum retention ROI.
 """)
-
-# Calculate total customers for volume retention and crisis management
-volume_total_customers = sum(volume_data['total_customers'])
-crisis_total_customers = sum(crisis_data['total_customers'])
-
-# Normalize funnel widths (max width = 1.0 for volume)
-max_width = 1.0
-volume_width = max_width
-crisis_width = crisis_total_customers / volume_total_customers
-
-# Draw funnel with relative widths
-import plotly.graph_objects as go
-
-fig_funnel = go.Figure()
-
-# Volume Retention (wider base)
-fig_funnel.add_shape(type="rect",
-                     x0=0, x1=volume_width,
-                     y0=0.5, y1=1,
-                     line=dict(color="RoyalBlue"),
-                     fillcolor="RoyalBlue",
-                     opacity=0.6,
-                     layer="below")
-
-fig_funnel.add_annotation(x=volume_width / 2, y=0.75,
-                          text=f"Volume Retention<br>{volume_total_customers:,} Customers",
-                          showarrow=False,
-                          font=dict(size=16, color="white"))
-
-# Crisis Management (narrower top)
-fig_funnel.add_shape(type="rect",
-                     x0=(max_width - crisis_width)/2, x1=(max_width + crisis_width)/2,
-                     y0=0, y1=0.5,
-                     line=dict(color="Crimson"),
-                     fillcolor="Crimson",
-                     opacity=0.6,
-                     layer="below")
-
-fig_funnel.add_annotation(x=max_width / 2, y=0.25,
-                          text=f"Crisis Management<br>{crisis_total_customers:,} Customers",
-                          showarrow=False,
-                          font=dict(size=16, color="white"))
-
-fig_funnel.update_layout(
-    title="🎯 Dual Retention Strategy Funnel",
-    xaxis=dict(visible=False, range=[0, max_width]),
-    yaxis=dict(visible=False, range=[0, 1]),
-    height=300,
-    margin=dict(l=20, r=20, t=40, b=20),
-    paper_bgcolor='white'
-)
-
-st.plotly_chart(fig_funnel, use_container_width=True)
-
 
 # ==================== FOOTER ====================
 st.markdown("---")
