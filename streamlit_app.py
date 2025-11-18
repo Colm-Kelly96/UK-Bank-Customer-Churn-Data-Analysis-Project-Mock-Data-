@@ -47,9 +47,10 @@ with col4:
 
 st.markdown("---")
 
-# ==================== TOP 5 CHURN DRIVERS ====================
+# ==================== TOP 5 CHURN DRIVERS (TABLE ONLY — FULLY HARDCODED) ====================
 st.subheader("⚠️ Top 5 Churn Drivers")
 
+# Hard-coded driver dataset
 churn_drivers_data = {
     'rank': [1, 2, 3, 4, 5],
     'churn_driver': [
@@ -67,69 +68,45 @@ churn_drivers_data = {
 
 churn_drivers_df = pd.DataFrame(churn_drivers_data)
 
+# Display the table (still hard-coded, no SQL)
 st.dataframe(churn_drivers_df, use_container_width=True, height=250)
 
-fig_drivers = go.Figure()
-fig_drivers.add_trace(go.Bar(
-    x=churn_drivers_df['churn_driver'],
-    y=churn_drivers_df['churned_customers'],
-    marker_color='#ff6b6b',
-    text=churn_drivers_df['churn_percentage'],
-    textposition='outside'
-))
-fig_drivers.update_layout(
-    title="Churned Customers by Driver",
-    height=400,
-    showlegend=False
-)
-st.plotly_chart(fig_drivers, use_container_width=True)
-st.markdown("---")
 
-# ============================================================
-# 📉 UPDATED: CHURNED CUSTOMERS BY VOLUME (SORTED + COLOUR BY VOLUME)
-# ============================================================
+# ==================== 💥 CHURNED CUSTOMERS BY VOLUME ====================
+st.subheader("💥 Churned Customers by Volume")
 
-st.subheader("📉 Churned Customers by Volume")
+# Prepare volume dataset (same data as earlier volume table)
+volume_df = pd.DataFrame({
+    'at_risk_segment': volume_data['at_risk_segment'],
+    'churned_customers': volume_data['churned_customers']
+}).sort_values(by='churned_customers', ascending=True)   # Sort for horizontal bar
 
-# Sort by churn volume (descending)
-sorted_df = churn_drivers_df.sort_values(by="churned_customers", ascending=False)
+# Create horizontal ranked bar with colour scale
+fig_volume = go.Figure()
 
-# Colour scale based on churn volume
-volume_values = sorted_df["churned_customers"]
-
-fig_volume = go.Figure(go.Bar(
-    x=sorted_df['churned_customers'],
-    y=sorted_df['churn_driver'],
+fig_volume.add_trace(go.Bar(
+    x=volume_df['churned_customers'],
+    y=volume_df['at_risk_segment'],
     orientation='h',
+    text=volume_df['churned_customers'],
+    textposition='auto',
     marker=dict(
-        color=volume_values,
+        color=volume_df['churned_customers'],
         colorscale='Reds',
         showscale=True,
-        colorbar=dict(
-            title="Churn Volume",
-            thickness=12
-        )
-    ),
-    text=sorted_df['churn_percentage'],
-    textposition='auto',
-    hovertemplate=
-        "<b>%{y}</b><br>" +
-        "Churned: %{x}<br>" +
-        "Churn %: %{text}<br>" +
-        "<extra></extra>"
+        colorbar=dict(title='Churn Volume')
+    )
 ))
 
 fig_volume.update_layout(
-    title="Churned Customers by Volume (Colour = Churn Volume)",
-    xaxis_title="Churned Customers",
-    yaxis_title="Churn Driver",
-    height=450,
-    margin=dict(l=120, r=20, t=60, b=40)
+    height=550,
+    showlegend=False,
+    margin=dict(l=10, r=10, t=10, b=10)
 )
 
 st.plotly_chart(fig_volume, use_container_width=True)
-st.markdown("---")
 
+st.markdown("---")
 
 # ==================== HIGH-RISK SEGMENTS (HARDCODED) ====================
 st.subheader("🎯 High-Risk Combination Segments")
