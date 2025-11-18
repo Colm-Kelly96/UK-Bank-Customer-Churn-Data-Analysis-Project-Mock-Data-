@@ -47,7 +47,6 @@ with col4:
 
 st.markdown("---")
 
-
 # ==================== TOP 5 CHURN DRIVERS (TABLE ONLY - HARDCODED) ====================
 st.subheader("⚠️ Top 5 Churn Drivers")
 
@@ -204,6 +203,27 @@ st.info("""
 
 This dual approach delivers maximum retention ROI.
 """)
+
+# ==================== FUNNEL VISUALIZATION ====================
+fig = go.Figure()
+
+# Funnel rectangles: wide top (Volume Retention), narrow bottom (Crisis Management)
+fig.add_shape(type="rect", x0=0, y0=0, x1=1, y1=0.4, fillcolor="lightblue", line=dict(color="blue"))
+fig.add_shape(type="rect", x0=0.3, y0=0.4, x1=0.7, y1=1, fillcolor="salmon", line=dict(color="red"))
+
+# Add annotations for sections
+fig.add_annotation(x=0.5, y=0.2, text="📈 Volume Retention\n(Big segments)", showarrow=False, font=dict(size=14))
+fig.add_annotation(x=0.5, y=0.7, text="🚨 Crisis Management\n(Small urgent segments)", showarrow=False, font=dict(size=14))
+
+fig.update_layout(
+    height=300,
+    margin=dict(l=20, r=20, t=20, b=20),
+    xaxis=dict(visible=False, range=[0,1]),
+    yaxis=dict(visible=False, range=[0,1]),
+    plot_bgcolor="white"
+)
+
+st.plotly_chart(fig, use_container_width=True)
 
 # ==================== FOOTER ====================
 st.markdown("---")
