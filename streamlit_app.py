@@ -47,7 +47,7 @@ with col4:
 
 st.markdown("---")
 
-# ==================== TOP 5 CHURN DRIVERS (HARDCODED - YOUR WINNING VERSION) ====================
+# ==================== TOP 5 CHURN DRIVERS ====================
 st.subheader("⚠️ Top 5 Churn Drivers")
 
 churn_drivers_data = {
@@ -83,6 +83,50 @@ fig_drivers.update_layout(
     showlegend=False
 )
 st.plotly_chart(fig_drivers, use_container_width=True)
+st.markdown("---")
+
+# ============================================================
+# ✅ NEW SECTION: CHURNED CUSTOMERS BY VOLUME (HORIZONTAL BAR)
+# ============================================================
+
+st.subheader("📉 Churned Customers by Volume")
+
+# Convert risk multiplier for colour encoding
+risk_values = churn_drivers_df['risk_multiplier'].str.replace('x', '').astype(float)
+
+fig_volume = go.Figure(go.Bar(
+    x=churn_drivers_df['churned_customers'],
+    y=churn_drivers_df['churn_driver'],
+    orientation='h',
+    marker=dict(
+        color=risk_values,
+        colorscale='Reds',
+        showscale=True,
+        colorbar=dict(
+            title="Risk Multiplier",
+            thickness=12
+        )
+    ),
+    text=churn_drivers_df['churn_percentage'],
+    textposition='auto',
+    hovertemplate=
+        "<b>%{y}</b><br>" +
+        "Churned: %{x}<br>" +
+        "Churn %: %{text}<br>" +
+        "Risk Multiplier: %{marker.color:.2f}x" +
+        "<extra></extra>"
+))
+
+fig_volume.update_layout(
+    title="Churned Customers by Volume (Colour = Risk Multiplier)",
+    xaxis_title="Churned Customers",
+    yaxis_title="Churn Driver",
+    height=450,
+    margin=dict(l=120, r=20, t=60, b=40)
+)
+
+st.plotly_chart(fig_volume, use_container_width=True)
+
 st.markdown("---")
 
 # ==================== HIGH-RISK SEGMENTS (HARDCODED) ====================
