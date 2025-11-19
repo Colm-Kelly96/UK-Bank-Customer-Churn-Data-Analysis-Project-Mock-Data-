@@ -38,13 +38,11 @@ st.markdown("""
 </a>
 """, unsafe_allow_html=True)
 
-st.markdown("""
-<div style='background-color: #e3f2fd; padding: 15px; border-radius: 8px; border-left: 4px solid #1976d2; margin-bottom: 20px;'>
-    <p style='margin: 0; color: #555; font-size: 15px;'>
-    <strong>Portfolio Project: (early stage itteration)</strong> Demonstrating SQL, Python, and data visualization skills through customer churn analysis. Built with AI assistance.
-    </p>
-</div>
-""", unsafe_allow_html=True)
+st.info("""
+**Portfolio Project (Early-stage iteration):** Demonstrating SQL, Python, and data visualization skills through customer churn analysis. Built with AI assistance.
+
+**Database Schema:** [SQLite relational database](https://github.com/Colm-Kelly96/UK-Bank-Customer-Churn-Data-Analysis-Project-Mock-Data-/blob/main/V2_Bank_Churn__SQL_data_base.db) with normalized table structure covering 10,000 customers. Data split across separate tables  — requiring SQL joins for multi-dimensional analysis.
+""")
 
 
 st.subheader("📊 Churn Overview")
