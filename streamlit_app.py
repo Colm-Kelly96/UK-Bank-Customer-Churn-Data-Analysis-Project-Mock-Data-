@@ -328,8 +328,13 @@ st.dataframe(pd.DataFrame(crisis_data), use_container_width=True, height=420)
 
 st.markdown("---")
 
-# ==================== DUAL STRATEGY ====================
-st.subheader("💡 Recommended Retention Strategy")
+# ==================== DUAL STRATEGY (WRAPPED) ====================
+st.markdown("""
+<div style='background-color: #e8f5e9; padding: 30px; border-radius: 10px; border-left: 5px solid #66bb6a; margin-bottom: 30px;'>
+    <h2 style='color: #333; margin-top: 0;'>💡 Recommended Retention Strategy</h2>
+    <p style='color: #666; font-size: 16px;'>Dual approach for maximum retention ROI</p>
+</div>
+""", unsafe_allow_html=True)
 
 col1, col2 = st.columns(2)
 
@@ -338,14 +343,16 @@ with col1:
     ### 📈 Volume Retention
     **Goal: Reduce churn at scale**
 
-    **Primary Target Segments:**
+    **Primary Target:**
     - Single Product   
     - Inactive Member 
 
     **Recommended Actions:**
-    - Cross-sell & product bundling campaigns
-    - Automated re-engagement journeys
-    - Loyalty incentives for adding a second product
+    
+    **Cross-Sell Blitz**  
+    - **Target:** 4,734 single-product customers  
+    - **Offer:** Second product incentive (e.g., Interest rate boost, fee waiver, cashback)  
+    - **Communication:** Marketing campaign - In-app Banners, Push Notifications, Emails
     """)
 
 with col2:
@@ -353,14 +360,13 @@ with col2:
     ### 🚨 Crisis Management
     **Goal: Stop customers about to leave now**
 
-    **Primary Target Segments:**
+    **Primary Target:**
     - Has Active Complaint  
 
     **Recommended Actions:**
-    - 48-hour complaint resolution SLA
-    - Dedicated retention team
-    - Service recovery offers
-    - Root-cause analysis & process fixes
+    
+    - Root-cause analysis & process fixes  
+    - Uplifted complaint handling process – remediation and proactive follow ups
     """)
 
 st.info("""
@@ -371,28 +377,7 @@ st.info("""
 This dual approach delivers maximum retention ROI.
 """)
 
-# ==================== BUSINESS RECOMMENDATIONS ====================
 st.markdown("---")
-st.subheader("💡 Business Recommendations")
-
-st.markdown("""
-### Priorty Actions
-
-1. **Cross-Sell Blitz**  
-_Target:_ 4,734 single-product customers  
-_Offer:_ Second product with incentive (e.g., fee waiver, cashback)  
-_Expected impact:_ Reduce churn from 36.9% to 6-7% → save ~1,500 customers  
-
-2. **Complaint Fast-Track**  
-_Target:_ 300 complainers (especially Card Issues, Access, Fraud)  
-_SLA:_ Resolve within 48 hours for severity 4-5 issues  
-_Expected impact:_ Reduce complaint-driven churn from 65% to 40% → save ~75 customers  
-
-3. **Inactive Re-activation**  
-_Target:_ 4,027 inactive members  
-_Campaign:_ Push notifications, special offers, gamification  
-_Expected impact:_ Reactivate 20% → reduce churn by 229 customers  
-""")
 
 
 # ==================== FOOTER ====================
