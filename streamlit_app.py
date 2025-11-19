@@ -108,8 +108,8 @@ with col1:
             showscale=False,
             line=dict(color='rgba(255, 255, 255, 1.0)', width=1)
         ),
-        text=[f"{pct} ({vol:,})" for pct, vol in zip(
-            churn_drivers_df_sorted['churn_percentage'],
+        text=[f"{round(pct)}% ({vol:,})" for pct, vol in zip(
+            churn_drivers_df_sorted['churn_pct_value'],
             churn_drivers_df_sorted['churned_customers']
         )],
         textposition='outside'
@@ -125,7 +125,7 @@ with col1:
     )
     
     st.plotly_chart(fig_pct, use_container_width=True)
-
+    
 with col2:
     st.markdown("#### 💥 Churn by Volume")
     
