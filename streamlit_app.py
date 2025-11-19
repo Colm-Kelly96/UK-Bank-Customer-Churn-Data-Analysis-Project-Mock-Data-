@@ -38,7 +38,7 @@ st.markdown("""
 </a>
 """, unsafe_allow_html=True)
 
-st.subheader("📊 Churn Analysis Overview")
+st.subheader("📊 Churn Overview")
 col1, col2, col3, col4 = st.columns(4)
 
 total_customers = 10000  # Fixed for your dataset
