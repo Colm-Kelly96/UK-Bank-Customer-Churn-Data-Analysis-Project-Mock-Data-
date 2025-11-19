@@ -60,74 +60,71 @@ st.markdown("---")
 
 # ==================== TOP CHURN DRIVERS SECTION (FULLY WRAPPED) ====================
 st.markdown("""
-<div style='background-color: #fff5f5; padding: 30px; border-radius: 12px; border: 2px solid #d62728; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); margin: 20px 0;'>
-    <h2 style='color: #d62728; margin-top: 0; border-bottom: 3px solid #d62728; padding-bottom: 15px;'>⚠️ Top Churn Drivers</h2>
-    <p style='color: #666; font-size: 16px; margin-bottom: 20px;'>Understanding which customer characteristics predict churn</p>
+<div style='background-color: #f8f9fa; padding: 30px; border-radius: 10px; border-left: 5px solid #d62728; margin-bottom: 30px;'>
+    <h2 style='color: #333; margin-top: 0;'>⚠️ Top Churn Drivers</h2>
+    <p style='color: #666; font-size: 16px;'>Understanding which customer segments are most at risk</p>
+</div>
 """, unsafe_allow_html=True)
 
-# Sub-heading 1: Table
-st.markdown("<h3 style='color: #333; margin-top: 20px;'>📊 Churn by Percentage</h3>", unsafe_allow_html=True)
-st.markdown("<p style='color: #666; font-style: italic; margin-bottom: 15px;'>Ranked by churn rate - shows which customer characteristics are most predictive of churn</p>", unsafe_allow_html=True)
+# Create columns for layout
+col1, col2 = st.columns([1, 1])
 
-churn_drivers_data = {
-    'rank': [1, 2, 3, 4, 5],
-    'churn_driver': [
-        'Has Complaint: Yes',
-        'Number of Products: 1',
-        'NPS Band: Detractor',
-        'Active Member: No',
-        'Age Group: 18-25'
-    ],
-    'churn_percentage': ['65.00%', '36.90%', '35.67%', '28.48%', '26.49%'],
-    'risk_multiplier': ['3.16x', '1.79x', '1.73x', '1.38x', '1.29x'],
-    'total_customers': [300, 4734, 1643, 4027, 1412],
-    'churned_customers': [195, 1747, 586, 1147, 374]
-}
+with col1:
+    st.markdown("#### 📊 Churn by Percentage")
+    st.caption("Ranked by churn rate")
+    
+    churn_drivers_data = {
+        'rank': [1, 2, 3, 4, 5],
+        'churn_driver': [
+            'Has Complaint: Yes',
+            'Number of Products: 1',
+            'NPS Band: Detractor',
+            'Active Member: No',
+            'Age Group: 18-25'
+        ],
+        'churn_percentage': ['65.00%', '36.90%', '35.67%', '28.48%', '26.49%'],
+        'risk_multiplier': ['3.16x', '1.79x', '1.73x', '1.38x', '1.29x'],
+        'total_customers': [300, 4734, 1643, 4027, 1412],
+        'churned_customers': [195, 1747, 586, 1147, 374]
+    }
+    
+    churn_drivers_df = pd.DataFrame(churn_drivers_data)
+    st.dataframe(churn_drivers_df, use_container_width=True, height=250)
 
-churn_drivers_df = pd.DataFrame(churn_drivers_data)
-st.dataframe(churn_drivers_df, use_container_width=True, height=250)
-
-st.markdown("<div style='margin: 30px 0;'></div>", unsafe_allow_html=True)
-
-# Sub-heading 2: Graph
-st.markdown("<h3 style='color: #333;'>💥 Churn by Volume</h3>", unsafe_allow_html=True)
-st.markdown("<p style='color: #666; font-style: italic; margin-bottom: 15px;'>Ranked by absolute number of customers lost - shows where retention efforts have greatest impact</p>", unsafe_allow_html=True)
-
-# Prepare data ordered by churned customers descending
-churn_drivers_df_sorted = churn_drivers_df.sort_values(by='churned_customers', ascending=True)
-
-fig = go.Figure()
-
-fig.add_trace(go.Bar(
-    y=churn_drivers_df_sorted['churn_driver'],
-    x=churn_drivers_df_sorted['churned_customers'],
-    orientation='h',
-    marker=dict(
-        color=churn_drivers_df_sorted['churned_customers'],
-        colorscale='Reds',
-        reversescale=False,
-        colorbar=dict(title="Churn Volume"),
-        line=dict(color='rgba(255, 255, 255, 1.0)', width=1)
-    ),
-    text=churn_drivers_df_sorted['churned_customers'],
-    textposition='outside'
-))
-
-fig.update_layout(
-    xaxis_title="Churned Customers",
-    yaxis_title="",
-    yaxis=dict(tickmode='linear'),
-    height=400,
-    margin=dict(l=200, r=40, t=20, b=40),
-    template='plotly_white',
-    paper_bgcolor='rgba(0,0,0,0)',
-    plot_bgcolor='rgba(0,0,0,0)'
-)
-
-st.plotly_chart(fig, use_container_width=True)
-
-# Close the colored block
-st.markdown("</div>", unsafe_allow_html=True)
+with col2:
+    st.markdown("#### 💥 Churn by Volume")
+    st.caption("Ranked by customers lost")
+    
+    # Prepare data
+    churn_drivers_df_sorted = churn_drivers_df.sort_values(by='churned_customers', ascending=True)
+    
+    fig = go.Figure()
+    
+    fig.add_trace(go.Bar(
+        y=churn_drivers_df_sorted['churn_driver'],
+        x=churn_drivers_df_sorted['churned_customers'],
+        orientation='h',
+        marker=dict(
+            color=churn_drivers_df_sorted['churned_customers'],
+            colorscale='Reds',
+            reversescale=False,
+            showscale=False,
+            line=dict(color='rgba(248, 248, 249, 1.0)', width=1)
+        ),
+        text=churn_drivers_df_sorted['churned_customers'],
+        textposition='outside'
+    ))
+    
+    fig.update_layout(
+        xaxis_title="Churned Customers",
+        yaxis_title="",
+        yaxis=dict(tickmode='linear'),
+        height=250,
+        margin=dict(l=10, r=40, t=20, b=40),
+        template='plotly_white'
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
 
 st.markdown("---")
 # ==================== HIGH-RISK SEGMENTS (HARDCODED) ====================
