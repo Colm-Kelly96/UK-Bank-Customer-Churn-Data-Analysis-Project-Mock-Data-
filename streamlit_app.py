@@ -92,7 +92,7 @@ with col1:
     # Convert percentage strings to floats
     churn_drivers_df['churn_pct_value'] = churn_drivers_df['churn_percentage'].str.rstrip('%').astype(float)
     
-    # Create bubble chart
+    # Create bubble chart with much larger bubbles
     fig_bubble = go.Figure()
     
     fig_bubble.add_trace(go.Scatter(
@@ -102,26 +102,26 @@ with col1:
         marker=dict(
             size=churn_drivers_df['churned_customers'],
             sizemode='area',
-            sizeref=2.*max(churn_drivers_df['churned_customers'])/(60.**2),
-            sizemin=4,
+            sizeref=2.*max(churn_drivers_df['churned_customers'])/(150.**2),  # Much larger - changed from 60 to 150
+            sizemin=20,  # Increased minimum size from 4 to 20
             color=churn_drivers_df['churn_pct_value'],
             colorscale='Reds',
             showscale=False,
-            line=dict(color='white', width=2)
+            line=dict(color='white', width=3)
         ),
         text=[f"{pct}<br>{vol:,}" for pct, vol in zip(
             churn_drivers_df['churn_percentage'],
             churn_drivers_df['churned_customers']
         )],
         textposition='middle center',
-        textfont=dict(size=10, color='white', family='Arial Black'),
+        textfont=dict(size=11, color='white', family='Arial Black'),
         hovertemplate='<b>%{y}</b><br>Churn Rate: %{x:.2f}%<br>Churned: %{marker.size:,}<extra></extra>'
     ))
     
     fig_bubble.update_layout(
         xaxis_title="Churn Percentage (%)",
         yaxis_title="",
-        height=350,
+        height=400,  # Increased height from 350 to 400
         margin=dict(l=10, r=40, t=20, b=40),
         template='plotly_white',
         xaxis=dict(range=[0, 70]),
