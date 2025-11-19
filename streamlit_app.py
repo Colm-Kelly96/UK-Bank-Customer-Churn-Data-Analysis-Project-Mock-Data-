@@ -71,7 +71,6 @@ col1, col2 = st.columns([1, 1])
 
 with col1:
     st.markdown("#### 📊 Churn by Percentage")
-
     
     churn_drivers_data = {
         'rank': [1, 2, 3, 4, 5],
@@ -89,7 +88,47 @@ with col1:
     }
     
     churn_drivers_df = pd.DataFrame(churn_drivers_data)
-    st.dataframe(churn_drivers_df, use_container_width=True, height=250)
+    
+    # Convert percentage strings to floats
+    churn_drivers_df['churn_pct_value'] = churn_drivers_df['churn_percentage'].str.rstrip('%').astype(float)
+    
+    # Create bubble chart
+    fig_bubble = go.Figure()
+    
+    fig_bubble.add_trace(go.Scatter(
+        x=churn_drivers_df['churn_pct_value'],
+        y=churn_drivers_df['churn_driver'],
+        mode='markers+text',
+        marker=dict(
+            size=churn_drivers_df['churned_customers'],
+            sizemode='area',
+            sizeref=2.*max(churn_drivers_df['churned_customers'])/(60.**2),
+            sizemin=4,
+            color=churn_drivers_df['churn_pct_value'],
+            colorscale='Reds',
+            showscale=False,
+            line=dict(color='white', width=2)
+        ),
+        text=[f"{pct}<br>{vol:,}" for pct, vol in zip(
+            churn_drivers_df['churn_percentage'],
+            churn_drivers_df['churned_customers']
+        )],
+        textposition='middle center',
+        textfont=dict(size=10, color='white', family='Arial Black'),
+        hovertemplate='<b>%{y}</b><br>Churn Rate: %{x:.2f}%<br>Churned: %{marker.size:,}<extra></extra>'
+    ))
+    
+    fig_bubble.update_layout(
+        xaxis_title="Churn Percentage (%)",
+        yaxis_title="",
+        height=350,
+        margin=dict(l=10, r=40, t=20, b=40),
+        template='plotly_white',
+        xaxis=dict(range=[0, 70]),
+        yaxis=dict(tickmode='linear')
+    )
+    
+    st.plotly_chart(fig_bubble, use_container_width=True)
 
 with col2:
     st.markdown("#### 💥 Churn by Volume")
