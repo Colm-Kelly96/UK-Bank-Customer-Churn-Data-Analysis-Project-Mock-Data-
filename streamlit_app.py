@@ -38,6 +38,15 @@ st.markdown("""
 </a>
 """, unsafe_allow_html=True)
 
+st.markdown("""
+<div style='background-color: #e3f2fd; padding: 15px; border-radius: 8px; border-left: 4px solid #1976d2; margin-bottom: 20px;'>
+    <p style='margin: 0; color: #555; font-size: 15px;'>
+    📊 <strong>Portfolio Project:</strong> Demonstrating SQL, Python, and data visualization skills through customer churn analysis. Built with AI assistance.
+    </p>
+</div>
+""", unsafe_allow_html=True)
+
+
 st.subheader("📊 Churn Overview")
 col1, col2, col3, col4 = st.columns(4)
 
