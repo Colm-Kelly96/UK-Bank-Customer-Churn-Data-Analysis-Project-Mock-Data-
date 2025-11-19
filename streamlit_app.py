@@ -32,12 +32,6 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown("""
-<a href="#recommended-retention-strategy" style="font-size:16px; text-decoration:none; color:#007bff;">
-🔗 Actionable Recommendations
-</a>
-""", unsafe_allow_html=True)
-
 st.info("""
 **Portfolio Project (Early-stage iteration):** Demonstrating SQL, Python, and data visualization skills through customer churn analysis. Built with AI assistance.
 
@@ -47,6 +41,12 @@ st.info("""
 
 st.subheader("📊 Churn Overview")
 col1, col2, col3, col4 = st.columns(4)
+st.markdown("""
+<a href="#recommended-retention-strategy" style="font-size:16px; text-decoration:none; color:#007bff;">
+🔗 Actionable Recommendations
+</a>
+""", unsafe_allow_html=True)
+
 
 total_customers = 10000  # Fixed for your dataset
 churned = df['has_exited'].sum()
