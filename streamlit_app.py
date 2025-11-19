@@ -273,60 +273,6 @@ with col2:
 
 st.markdown("---")
 
-# ==================== HIGH-RISK SEGMENTS (HARDCODED) ====================
-st.subheader("🎯 High-Risk Combination Segments")
-
-st.markdown("#### Volume Retention (Top 10 by Number of Churned Customers)")
-st.markdown("**🔥 Key Insight: 9 of the top 10 high-volume churn segments involve customers with only a single product**  \nSingle-product customers are the biggest driver of churn volume — focusing on them with proactive retention will have the biggest impact")
-
-volume_data = {
-    'rank': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    'at_risk_segment': [
-        'Single Product Only + No Complaint',
-        'Single Product Only + Balance £30-80k',
-        'Inactive Member + No Complaint',
-        'Tenure 0-2 years + Single Product Only',
-        'Single Product Only + Inactive Member',
-        'Single Product Only + NPS Not Surveyed',
-        'Gender Female + Single Product Only',
-        'Gender Male + Single Product Only',
-        'Card Credit + Single Product Only',
-        'Card Debit + Single Product Only'
-    ],
-    'total_customers': [4535, 3067, 3876, 2347, 1888, 2418, 2381, 2353, 2224, 1966],
-    'churned_customers': [1582, 1117, 1033, 954, 905, 888, 882, 865, 815, 755],
-    'churn_percentage': ['34.88%', '36.42%', '26.65%', '40.65%', '47.93%', '36.72%', '37.04%', '36.76%', '36.65%', '38.40%'],
-    'risk_multiplier': ['1.7x', '1.8x', '1.3x', '2.0x', '2.3x', '1.8x', '1.8x', '1.8x', '1.8x', '1.9x']
-}
-st.dataframe(pd.DataFrame(volume_data), use_container_width=True, height=420)
-
-st.markdown("---")
-
-st.markdown("#### Crisis Management (Top 10 by Churn Percentage)")
-st.markdown("**🔥 Key Insight: 9 of the top 10 highest-churn segments involve an active complaint**  \nComplaints are the #1 predictor of imminent churn — resolving them fast is non-negotiable.")
-
-crisis_data = {
-    'rank': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    'at_risk_segment': [
-        'NPS Detractor + Has Complaint',
-        'Single Product Only + Has Complaint',
-        'Inactive Member + Has Complaint',
-        'Age 18-25 + Has Complaint',
-        'Has Complaint + Balance £30-80k',
-        'Age 41-60 + Has Complaint',
-        'NPS Not Surveyed + Has Complaint',
-        'Age 26-40 + Has Complaint',
-        'Has Complaint + Balance £0',
-        'Single Product Only + NPS Detractor'
-    ],
-    'total_customers': [92, 199, 151, 55, 178, 115, 123, 111, 53, 807],
-    'churned_customers': [81, 165, 114, 41, 127, 78, 78, 68, 32, 461],
-    'churn_percentage': ['88.04%', '82.91%', '75.50%', '74.55%', '71.35%', '67.83%', '63.41%', '61.26%', '60.38%', '57.13%'],
-    'risk_multiplier': ['4.3x', '4.0x', '3.7x', '3.6x', '3.5x', '3.3x', '3.1x', '3.0x', '2.9x', '2.8x']
-}
-st.dataframe(pd.DataFrame(crisis_data), use_container_width=True, height=420)
-
-st.markdown("---")
 
 # ==================== DUAL STRATEGY (WRAPPED - ORANGE) ====================
 st.markdown("""
@@ -380,6 +326,61 @@ st.info("""
 
 This dual approach delivers maximum retention ROI.
 """)
+
+st.markdown("---")
+
+# ==================== HIGH-RISK SEGMENTS (HARDCODED) ====================
+st.subheader("🎯 High-Risk Combination Segments")
+
+st.markdown("#### Volume Retention (Top 10 by Number of Churned Customers)")
+st.markdown("**🔥 Key Insight: 9 of the top 10 high-volume churn segments involve customers with only a single product**  \nSingle-product customers are the biggest driver of churn volume — focusing on them with proactive retention will have the biggest impact")
+
+volume_data = {
+    'rank': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    'at_risk_segment': [
+        'Single Product Only + No Complaint',
+        'Single Product Only + Balance £30-80k',
+        'Inactive Member + No Complaint',
+        'Tenure 0-2 years + Single Product Only',
+        'Single Product Only + Inactive Member',
+        'Single Product Only + NPS Not Surveyed',
+        'Gender Female + Single Product Only',
+        'Gender Male + Single Product Only',
+        'Card Credit + Single Product Only',
+        'Card Debit + Single Product Only'
+    ],
+    'total_customers': [4535, 3067, 3876, 2347, 1888, 2418, 2381, 2353, 2224, 1966],
+    'churned_customers': [1582, 1117, 1033, 954, 905, 888, 882, 865, 815, 755],
+    'churn_percentage': ['34.88%', '36.42%', '26.65%', '40.65%', '47.93%', '36.72%', '37.04%', '36.76%', '36.65%', '38.40%'],
+    'risk_multiplier': ['1.7x', '1.8x', '1.3x', '2.0x', '2.3x', '1.8x', '1.8x', '1.8x', '1.8x', '1.9x']
+}
+st.dataframe(pd.DataFrame(volume_data), use_container_width=True, height=420)
+
+st.markdown("---")
+
+st.markdown("#### Crisis Management (Top 10 by Churn Percentage)")
+st.markdown("**🔥 Key Insight: 9 of the top 10 highest-churn segments involve an active complaint**  \nComplaints are the #1 predictor of imminent churn — resolving them fast is non-negotiable.")
+
+crisis_data = {
+    'rank': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    'at_risk_segment': [
+        'NPS Detractor + Has Complaint',
+        'Single Product Only + Has Complaint',
+        'Inactive Member + Has Complaint',
+        'Age 18-25 + Has Complaint',
+        'Has Complaint + Balance £30-80k',
+        'Age 41-60 + Has Complaint',
+        'NPS Not Surveyed + Has Complaint',
+        'Age 26-40 + Has Complaint',
+        'Has Complaint + Balance £0',
+        'Single Product Only + NPS Detractor'
+    ],
+    'total_customers': [92, 199, 151, 55, 178, 115, 123, 111, 53, 807],
+    'churned_customers': [81, 165, 114, 41, 127, 78, 78, 68, 32, 461],
+    'churn_percentage': ['88.04%', '82.91%', '75.50%', '74.55%', '71.35%', '67.83%', '63.41%', '61.26%', '60.38%', '57.13%'],
+    'risk_multiplier': ['4.3x', '4.0x', '3.7x', '3.6x', '3.5x', '3.3x', '3.1x', '3.0x', '2.9x', '2.8x']
+}
+st.dataframe(pd.DataFrame(crisis_data), use_container_width=True, height=420)
 
 st.markdown("---")
 # ==================== FOOTER ====================
