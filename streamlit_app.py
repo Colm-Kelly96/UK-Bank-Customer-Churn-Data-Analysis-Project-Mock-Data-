@@ -328,9 +328,9 @@ st.dataframe(pd.DataFrame(crisis_data), use_container_width=True, height=420)
 
 st.markdown("---")
 
-# ==================== DUAL STRATEGY (WRAPPED) ====================
+# ==================== DUAL STRATEGY (WRAPPED - ORANGE) ====================
 st.markdown("""
-<div style='background-color: #e8f5e9; padding: 30px; border-radius: 10px; border-left: 5px solid #66bb6a; margin-bottom: 30px;'>
+<div style='background-color: #fff3e0; padding: 30px; border-radius: 10px; border-left: 5px solid #ff9800; margin-bottom: 30px;'>
     <h2 style='color: #333; margin-top: 0;'>💡 Recommended Retention Strategy</h2>
     <p style='color: #666; font-size: 16px;'>Dual approach for maximum retention ROI</p>
 </div>
@@ -353,6 +353,10 @@ with col1:
     - **Target:** 4,734 single-product customers  
     - **Offer:** Second product incentive (e.g., Interest rate boost, fee waiver, cashback)  
     - **Communication:** Marketing campaign - In-app Banners, Push Notifications, Emails
+    
+    **Inactive Re-activation**  
+    - **Target:** 4,027 inactive members  
+    - **Campaign:** Push notifications, special offers, gamification
     """)
 
 with col2:
@@ -378,8 +382,6 @@ This dual approach delivers maximum retention ROI.
 """)
 
 st.markdown("---")
-
-
 # ==================== FOOTER ====================
 st.markdown("---")
 st.markdown("""
