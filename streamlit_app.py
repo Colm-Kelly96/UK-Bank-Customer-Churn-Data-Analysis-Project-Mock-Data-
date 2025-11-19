@@ -71,7 +71,7 @@ col1, col2 = st.columns([1, 1])
 
 with col1:
     st.markdown("#### 📊 Churn by Percentage")
-    st.caption("Ranked by churn rate")
+
     
     churn_drivers_data = {
         'rank': [1, 2, 3, 4, 5],
@@ -93,7 +93,7 @@ with col1:
 
 with col2:
     st.markdown("#### 💥 Churn by Volume")
-    st.caption("Ranked by customers lost")
+    
     
     # Prepare data
     churn_drivers_df_sorted = churn_drivers_df.sort_values(by='churned_customers', ascending=True)
