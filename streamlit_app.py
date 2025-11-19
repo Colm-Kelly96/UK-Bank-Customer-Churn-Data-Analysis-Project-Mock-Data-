@@ -162,6 +162,117 @@ with col2:
     st.plotly_chart(fig, use_container_width=True)
 
 st.markdown("---")
+
+st.markdown("---")
+
+# ==================== TOP RETENTION DRIVERS SECTION ====================
+st.markdown("""
+<div style='background-color: #e8f5e9; padding: 30px; border-radius: 10px; border-left: 5px solid #66bb6a; margin-bottom: 30px;'>
+    <h2 style='color: #333; margin-top: 0;'>💪 Top Retention Drivers</h2>
+    <p style='color: #666; font-size: 16px;'>Customer characteristics associated with lowest churn rates</p>
+</div>
+""", unsafe_allow_html=True)
+
+# Create columns for layout
+col1, col2 = st.columns([1, 1])
+
+with col1:
+    st.markdown("#### 📊 Retention by Percentage")
+    
+    retention_drivers_data = {
+        'category': [
+            'Number of Products',
+            'NPS Band',
+            'Tenure'
+        ],
+        'category_value': [
+            'Multi Products',
+            'Promoter',
+            '11-15 years'
+        ],
+        'total_customers': [5266, 2140, 666],
+        'churned_customers': [310, 21, 83],
+        'churn_rate_pct': [5.89, 0.98, 12.46]
+    }
+    
+    retention_drivers_df = pd.DataFrame(retention_drivers_data)
+    
+    # Create display label
+    retention_drivers_df['driver_label'] = retention_drivers_df['category'] + ': ' + retention_drivers_df['category_value']
+    
+    # Sort by churn rate ascending (lowest churn = best retention)
+    retention_drivers_df_sorted = retention_drivers_df.sort_values(by='churn_rate_pct', ascending=False)
+    
+    fig_ret_pct = go.Figure()
+    
+    fig_ret_pct.add_trace(go.Bar(
+        y=retention_drivers_df_sorted['driver_label'],
+        x=retention_drivers_df_sorted['churn_rate_pct'],
+        orientation='h',
+        marker=dict(
+            color=retention_drivers_df_sorted['churn_rate_pct'],
+            colorscale='Greens',
+            reversescale=True,  # Darker green = lower churn = better
+            showscale=False,
+            line=dict(color='rgba(255, 255, 255, 1.0)', width=1)
+        ),
+        text=[f"{round(pct)}% ({vol:,})" for pct, vol in zip(
+            retention_drivers_df_sorted['churn_rate_pct'],
+            retention_drivers_df_sorted['churned_customers']
+        )],
+        textposition='outside'
+    ))
+    
+    fig_ret_pct.update_layout(
+        xaxis_title="Churn Rate (%)",
+        yaxis_title="",
+        yaxis=dict(tickmode='linear'),
+        height=250,
+        margin=dict(l=10, r=40, t=20, b=40),
+        template='plotly_white'
+    )
+    
+    st.plotly_chart(fig_ret_pct, use_container_width=True)
+
+with col2:
+    st.markdown("#### 💥 Retained Customers by Volume")
+    
+    # Calculate retained customers
+    retention_drivers_df_sorted['retained_customers'] = retention_drivers_df_sorted['total_customers'] - retention_drivers_df_sorted['churned_customers']
+    
+    # Sort by retained customers for volume chart
+    retention_vol_sorted = retention_drivers_df_sorted.sort_values(by='retained_customers', ascending=True)
+    
+    fig_ret_vol = go.Figure()
+    
+    fig_ret_vol.add_trace(go.Bar(
+        y=retention_vol_sorted['driver_label'],
+        x=retention_vol_sorted['retained_customers'],
+        orientation='h',
+        marker=dict(
+            color=retention_vol_sorted['retained_customers'],
+            colorscale='Greens',
+            reversescale=False,
+            showscale=False,
+            line=dict(color='rgba(255, 255, 255, 1.0)', width=1)
+        ),
+        text=retention_vol_sorted['retained_customers'],
+        textposition='outside'
+    ))
+    
+    fig_ret_vol.update_layout(
+        xaxis_title="Retained Customers",
+        yaxis_title="",
+        yaxis=dict(tickmode='linear'),
+        height=250,
+        margin=dict(l=10, r=40, t=20, b=40),
+        template='plotly_white'
+    )
+    
+    st.plotly_chart(fig_ret_vol, use_container_width=True)
+
+st.markdown("---")
+
 # ==================== HIGH-RISK SEGMENTS (HARDCODED) ====================
 st.subheader("🎯 High-Risk Combination Segments")
 
