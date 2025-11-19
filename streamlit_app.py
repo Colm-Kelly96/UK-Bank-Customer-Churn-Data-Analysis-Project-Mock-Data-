@@ -89,46 +89,42 @@ with col1:
     
     churn_drivers_df = pd.DataFrame(churn_drivers_data)
     
-    # Convert percentage strings to floats
+    # Convert percentage strings to floats for sorting
     churn_drivers_df['churn_pct_value'] = churn_drivers_df['churn_percentage'].str.rstrip('%').astype(float)
     
-    # Create bubble chart with much larger bubbles
-    fig_bubble = go.Figure()
+    # Sort by percentage descending
+    churn_drivers_df_sorted = churn_drivers_df.sort_values(by='churn_pct_value', ascending=True)
     
-    fig_bubble.add_trace(go.Scatter(
-        x=churn_drivers_df['churn_pct_value'],
-        y=churn_drivers_df['churn_driver'],
-        mode='markers+text',
+    fig_pct = go.Figure()
+    
+    fig_pct.add_trace(go.Bar(
+        y=churn_drivers_df_sorted['churn_driver'],
+        x=churn_drivers_df_sorted['churn_pct_value'],
+        orientation='h',
         marker=dict(
-            size=churn_drivers_df['churned_customers'],
-            sizemode='area',
-            sizeref=2.*max(churn_drivers_df['churned_customers'])/(150.**2),  # Much larger - changed from 60 to 150
-            sizemin=20,  # Increased minimum size from 4 to 20
-            color=churn_drivers_df['churn_pct_value'],
+            color=churn_drivers_df_sorted['churn_pct_value'],
             colorscale='Reds',
+            reversescale=False,
             showscale=False,
-            line=dict(color='white', width=3)
+            line=dict(color='rgba(255, 255, 255, 1.0)', width=1)
         ),
-        text=[f"{pct}<br>{vol:,}" for pct, vol in zip(
-            churn_drivers_df['churn_percentage'],
-            churn_drivers_df['churned_customers']
+        text=[f"{pct} ({vol:,})" for pct, vol in zip(
+            churn_drivers_df_sorted['churn_percentage'],
+            churn_drivers_df_sorted['churned_customers']
         )],
-        textposition='middle center',
-        textfont=dict(size=11, color='white', family='Arial Black'),
-        hovertemplate='<b>%{y}</b><br>Churn Rate: %{x:.2f}%<br>Churned: %{marker.size:,}<extra></extra>'
+        textposition='outside'
     ))
     
-    fig_bubble.update_layout(
+    fig_pct.update_layout(
         xaxis_title="Churn Percentage (%)",
         yaxis_title="",
-        height=400,  # Increased height from 350 to 400
+        yaxis=dict(tickmode='linear'),
+        height=250,
         margin=dict(l=10, r=40, t=20, b=40),
-        template='plotly_white',
-        xaxis=dict(range=[0, 70]),
-        yaxis=dict(tickmode='linear')
+        template='plotly_white'
     )
     
-    st.plotly_chart(fig_bubble, use_container_width=True)
+    st.plotly_chart(fig_pct, use_container_width=True)
 
 with col2:
     st.markdown("#### 💥 Churn by Volume")
