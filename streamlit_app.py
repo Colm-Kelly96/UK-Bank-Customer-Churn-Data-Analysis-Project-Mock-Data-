@@ -90,7 +90,7 @@ with col1:
         ],
         'churn_percentage': ['65.00%', '36.90%', '35.67%', '28.48%', '26.49%'],
         'risk_multiplier': ['3.16x', '1.79x', '1.73x', '1.38x', '1.29x'],
-        'total_customers': [300, 4734, 1643, 2027, 1412],
+        'total_customers': [300, 4734, 1643, 4027, 1412],
         'churned_customers': [195, 1747, 586, 1147, 374]
     }
     
@@ -133,41 +133,6 @@ with col1:
     
     st.plotly_chart(fig_pct, use_container_width=True)
     
-    # SQL EXPANDER FOR CHURN BY PERCENTAGE
-    with st.expander("📊 View SQL Query", expanded=False):
-        st.markdown("**Business Question:** Which customer attributes have the highest churn rates, and how much riskier are they compared to the baseline?")
-        
-        query = """
--- Database Schema:
--- customers(customer_id, surname, age, gender, region)
--- churn(customer_id, has_exited)
--- accounts(customer_id, balance, num_products, tenure, estimated_salary)
--- complaints(customer_id, has_complaint, satisfaction_score, complaint_date, complaint_category, nps_response, nps_band)
--- engagement(customer_id, is_active_member, card_type)
-
--- Example: Churn Rate by Has Complaint
-SELECT 
-    CASE WHEN co.has_complaint = 1 THEN 'Has Complaint: Yes' 
-         ELSE 'Has Complaint: No' END AS churn_driver,
-    COUNT(*) AS total_customers,
-    SUM(ch.has_exited) AS churned_customers,
-    ROUND(100.0 * SUM(ch.has_exited) / COUNT(*), 2) AS churn_percentage,
-    ROUND((100.0 * SUM(ch.has_exited) / COUNT(*)) / 
-          (SELECT 100.0 * SUM(has_exited) / COUNT(*) FROM churn), 2) AS risk_multiplier
-FROM customers c
-JOIN churn ch ON c.customer_id = ch.customer_id
-JOIN complaints co ON c.customer_id = co.customer_id
-GROUP BY co.has_complaint
-ORDER BY churn_percentage DESC;
-
--- Similar queries run for:
--- - Number of Products (accounts.num_products)
--- - NPS Band (complaints.nps_band)
--- - Active Member (engagement.is_active_member)
--- - Age Group (CASE WHEN age BETWEEN 18 AND 25 THEN '18-25'...)
-"""
-        st.code(query, language='sql')
-
 with col2:
     st.markdown("#### 💥 Churn by Volume")
     
@@ -202,31 +167,6 @@ with col2:
     )
     
     st.plotly_chart(fig, use_container_width=True)
-    
-    # SQL EXPANDER FOR CHURN BY VOLUME
-    with st.expander("📊 View SQL Query", expanded=False):
-        st.markdown("**Business Question:** Which customer segments are generating the highest absolute number of churned customers?")
-        
-        query = """
--- Same query as percentage view, but ordered by absolute churned customer count
--- This helps prioritize segments with largest scale impact
-
-SELECT 
-    CASE WHEN a.num_products = 1 THEN 'Number of Products: 1' 
-         ELSE 'Number of Products: Multi' END AS churn_driver,
-    COUNT(*) AS total_customers,
-    SUM(ch.has_exited) AS churned_customers,
-    ROUND(100.0 * SUM(ch.has_exited) / COUNT(*), 2) AS churn_percentage
-FROM customers c
-JOIN churn ch ON c.customer_id = ch.customer_id
-JOIN accounts a ON c.customer_id = a.customer_id
-GROUP BY CASE WHEN a.num_products = 1 THEN 1 ELSE 0 END
-ORDER BY churned_customers DESC;
-
--- Volume focus identifies where to maximize retention impact through scale
--- Even segments with moderate churn rates can be critical if they're large
-"""
-        st.code(query, language='sql')
 
 st.markdown("---")
 
@@ -300,54 +240,6 @@ with col1:
     )
     
     st.plotly_chart(fig_ret_pct, use_container_width=True)
-    
-    # SQL EXPANDER FOR RETENTION BY PERCENTAGE
-    with st.expander("📊 View SQL Query", expanded=False):
-        st.markdown("**Business Question:** Which customer characteristics are associated with the lowest churn rates (best retention)?")
-        
-        query = """
--- Identify customer segments with lowest churn rates
--- These represent best practices to replicate across other segments
-
--- Example: Multi-product customers show strongest retention
-SELECT 
-    CASE WHEN a.num_products > 1 THEN 'Multi Products' 
-         ELSE 'Single Product' END AS category_value,
-    COUNT(*) AS total_customers,
-    SUM(ch.has_exited) AS churned_customers,
-    ROUND(100.0 * SUM(ch.has_exited) / COUNT(*), 2) AS churn_rate_pct
-FROM customers c
-JOIN churn ch ON c.customer_id = ch.customer_id
-JOIN accounts a ON c.customer_id = a.customer_id
-WHERE a.num_products > 1
-GROUP BY CASE WHEN a.num_products > 1 THEN 1 ELSE 0 END;
-
--- Example: NPS Promoters have exceptional retention
-SELECT 
-    co.nps_band AS category_value,
-    COUNT(*) AS total_customers,
-    SUM(ch.has_exited) AS churned_customers,
-    ROUND(100.0 * SUM(ch.has_exited) / COUNT(*), 2) AS churn_rate_pct
-FROM customers c
-JOIN churn ch ON c.customer_id = ch.customer_id
-JOIN complaints co ON c.customer_id = co.customer_id
-WHERE co.nps_band = 'Promoter'
-GROUP BY co.nps_band;
-
--- Example: Long tenure (11-15 years) shows stability
-SELECT 
-    CASE WHEN a.tenure BETWEEN 11 AND 15 THEN '11-15 years' 
-         ELSE 'Other' END AS category_value,
-    COUNT(*) AS total_customers,
-    SUM(ch.has_exited) AS churned_customers,
-    ROUND(100.0 * SUM(ch.has_exited) / COUNT(*), 2) AS churn_rate_pct
-FROM customers c
-JOIN churn ch ON c.customer_id = ch.customer_id
-JOIN accounts a ON c.customer_id = a.customer_id
-WHERE a.tenure BETWEEN 11 AND 15
-GROUP BY CASE WHEN a.tenure BETWEEN 11 AND 15 THEN 1 ELSE 0 END;
-"""
-        st.code(query, language='sql')
 
 with col2:
     st.markdown("#### 💥 Retained Customers by Volume")
@@ -385,35 +277,6 @@ with col2:
     )
     
     st.plotly_chart(fig_ret_vol, use_container_width=True)
-    
-    # SQL EXPANDER FOR RETAINED CUSTOMERS VOLUME
-    with st.expander("📊 View SQL Query", expanded=False):
-        st.markdown("**Business Question:** Which high-retention segments have the largest customer base (total retained customers)?")
-        
-        query = """
--- Calculate retained customers (total - churned) for high-retention segments
--- Helps identify large successful segments worth studying and protecting
-
-SELECT 
-    CASE WHEN a.num_products > 1 THEN 'Multi Products' 
-         ELSE 'Single Product' END AS category_value,
-    COUNT(*) AS total_customers,
-    SUM(ch.has_exited) AS churned_customers,
-    COUNT(*) - SUM(ch.has_exited) AS retained_customers,
-    ROUND(100.0 * SUM(ch.has_exited) / COUNT(*), 2) AS churn_rate_pct
-FROM customers c
-JOIN churn ch ON c.customer_id = ch.customer_id
-JOIN accounts a ON c.customer_id = a.customer_id
-GROUP BY CASE WHEN a.num_products > 1 THEN 1 ELSE 0 END
-HAVING churn_rate_pct < 10.0  -- Focus on strong retention segments
-ORDER BY retained_customers DESC;
-
--- Large retained customer bases represent:
--- 1. Revenue stability (they're staying)
--- 2. Best practices to learn from
--- 3. Critical segments to protect
-"""
-        st.code(query, language='sql')
 
 st.markdown("---")
 
@@ -500,64 +363,6 @@ volume_data = {
 }
 st.dataframe(pd.DataFrame(volume_data), use_container_width=True, height=420)
 
-# SQL EXPANDER FOR VOLUME RETENTION TABLE
-with st.expander("📊 View SQL Query", expanded=False):
-    st.markdown("**Business Question:** What combinations of customer attributes generate the highest absolute volume of churned customers?")
-    
-    query = """
--- Multi-dimensional segmentation to find high-volume churn combinations
--- Uses multiple JOINs to combine customer attributes and identify patterns
-
--- Example 1: Single Product + No Complaint
-SELECT 
-    'Single Product Only + No Complaint' AS at_risk_segment,
-    COUNT(*) AS total_customers,
-    SUM(ch.has_exited) AS churned_customers,
-    ROUND(100.0 * SUM(ch.has_exited) / COUNT(*), 2) AS churn_percentage,
-    ROUND((100.0 * SUM(ch.has_exited) / COUNT(*)) / 
-          (SELECT 100.0 * SUM(has_exited) / COUNT(*) FROM churn), 2) AS risk_multiplier
-FROM customers c
-JOIN churn ch ON c.customer_id = ch.customer_id
-JOIN accounts a ON c.customer_id = a.customer_id
-JOIN complaints co ON c.customer_id = co.customer_id
-WHERE a.num_products = 1 
-  AND co.has_complaint = 0;
-
--- Example 2: Single Product + Balance £30-80k
-SELECT 
-    'Single Product Only + Balance £30-80k' AS at_risk_segment,
-    COUNT(*) AS total_customers,
-    SUM(ch.has_exited) AS churned_customers,
-    ROUND(100.0 * SUM(ch.has_exited) / COUNT(*), 2) AS churn_percentage,
-    ROUND((100.0 * SUM(ch.has_exited) / COUNT(*)) / 
-          (SELECT 100.0 * SUM(has_exited) / COUNT(*) FROM churn), 2) AS risk_multiplier
-FROM customers c
-JOIN churn ch ON c.customer_id = ch.customer_id
-JOIN accounts a ON c.customer_id = a.customer_id
-WHERE a.num_products = 1 
-  AND a.balance BETWEEN 30000 AND 80000;
-
--- Example 3: Inactive Member + No Complaint
-SELECT 
-    'Inactive Member + No Complaint' AS at_risk_segment,
-    COUNT(*) AS total_customers,
-    SUM(ch.has_exited) AS churned_customers,
-    ROUND(100.0 * SUM(ch.has_exited) / COUNT(*), 2) AS churn_percentage,
-    ROUND((100.0 * SUM(ch.has_exited) / COUNT(*)) / 
-          (SELECT 100.0 * SUM(has_exited) / COUNT(*) FROM churn), 2) AS risk_multiplier
-FROM customers c
-JOIN churn ch ON c.customer_id = ch.customer_id
-JOIN engagement e ON c.customer_id = e.customer_id
-JOIN complaints co ON c.customer_id = co.customer_id
-WHERE e.is_active_member = 0 
-  AND co.has_complaint = 0;
-
--- Pattern: Most high-volume segments involve single product ownership
--- Strategy: Proactive cross-sell campaigns to convert single → multi product
--- Full UNION query would combine all 10 segments, ORDER BY churned_customers DESC
-"""
-    st.code(query, language='sql')
-
 st.markdown("---")
 
 st.markdown("#### Crisis Management (Top 10 by Churn Percentage)")
@@ -583,64 +388,6 @@ crisis_data = {
     'risk_multiplier': ['4.3x', '4.0x', '3.7x', '3.6x', '3.5x', '3.3x', '3.1x', '3.0x', '2.9x', '2.8x']
 }
 st.dataframe(pd.DataFrame(crisis_data), use_container_width=True, height=420)
-
-# SQL EXPANDER FOR CRISIS MANAGEMENT TABLE
-with st.expander("📊 View SQL Query", expanded=False):
-    st.markdown("**Business Question:** What combinations of customer attributes show the highest churn rates (most critical risk)?")
-    
-    query = """
--- Identify extreme-risk segments with highest churn rates
--- These require immediate reactive intervention, not proactive campaigns
-
--- Example 1: NPS Detractor + Has Complaint (88% churn rate!)
-SELECT 
-    'NPS Detractor + Has Complaint' AS at_risk_segment,
-    COUNT(*) AS total_customers,
-    SUM(ch.has_exited) AS churned_customers,
-    ROUND(100.0 * SUM(ch.has_exited) / COUNT(*), 2) AS churn_percentage,
-    ROUND((100.0 * SUM(ch.has_exited) / COUNT(*)) / 
-          (SELECT 100.0 * SUM(has_exited) / COUNT(*) FROM churn), 2) AS risk_multiplier
-FROM customers c
-JOIN churn ch ON c.customer_id = ch.customer_id
-JOIN complaints co ON c.customer_id = co.customer_id
-WHERE co.nps_band = 'Detractor' 
-  AND co.has_complaint = 1;
-
--- Example 2: Single Product + Has Complaint (83% churn rate)
-SELECT 
-    'Single Product Only + Has Complaint' AS at_risk_segment,
-    COUNT(*) AS total_customers,
-    SUM(ch.has_exited) AS churned_customers,
-    ROUND(100.0 * SUM(ch.has_exited) / COUNT(*), 2) AS churn_percentage,
-    ROUND((100.0 * SUM(ch.has_exited) / COUNT(*)) / 
-          (SELECT 100.0 * SUM(has_exited) / COUNT(*) FROM churn), 2) AS risk_multiplier
-FROM customers c
-JOIN churn ch ON c.customer_id = ch.customer_id
-JOIN accounts a ON c.customer_id = a.customer_id
-JOIN complaints co ON c.customer_id = co.customer_id
-WHERE a.num_products = 1 
-  AND co.has_complaint = 1;
-
--- Example 3: Inactive Member + Has Complaint (76% churn rate)
-SELECT 
-    'Inactive Member + Has Complaint' AS at_risk_segment,
-    COUNT(*) AS total_customers,
-    SUM(ch.has_exited) AS churned_customers,
-    ROUND(100.0 * SUM(ch.has_exited) / COUNT(*), 2) AS churn_percentage,
-    ROUND((100.0 * SUM(ch.has_exited) / COUNT(*)) / 
-          (SELECT 100.0 * SUM(has_exited) / COUNT(*) FROM churn), 2) AS risk_multiplier
-FROM customers c
-JOIN churn ch ON c.customer_id = ch.customer_id
-JOIN engagement e ON c.customer_id = e.customer_id
-JOIN complaints co ON c.customer_id = co.customer_id
-WHERE e.is_active_member = 0 
-  AND co.has_complaint = 1;
-
--- Pattern: Complaints dominate highest-risk segments
--- Strategy: Immediate escalation, premium service recovery, executive outreach
--- Risk multipliers of 3-4x baseline require urgent reactive measures, not campaigns
-"""
-    st.code(query, language='sql')
 
 st.markdown("---")
 # ==================== FOOTER ====================
