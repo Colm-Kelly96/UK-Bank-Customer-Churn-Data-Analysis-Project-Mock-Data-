@@ -395,6 +395,6 @@ st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #666; padding: 30px;'>
     <p>Dashboard built with Streamlit • Analysis of 10,000 UK banking customers</p>
-    <p>Built by Colm Kelly | <a href="https://www.linkedin.com/in/colm-kelly96/">LinkedIn</a> | <a href="https://github.com/Colm-Kelly96">GitHub</a></p>
+    <p>Built by Colm Kelly | <a href="https://www.linkedin.com/in/colm-kelly-/">LinkedIn</a> | <a href="https://github.com/Colm-Kelly96">GitHub</a></p>
 </div>
 """, unsafe_allow_html=True)
