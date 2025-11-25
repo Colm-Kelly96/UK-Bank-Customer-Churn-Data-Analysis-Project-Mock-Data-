@@ -1,56 +1,307 @@
 # Key SQL Queries - UK Bank Churn Analysis
 
 ## Overview
-This document showcases advanced SQL techniques used in the churn analysis project. All queries demonstrate production-ready SQL for financial services analytics.
+This document showcases advanced SQL techniques used in the churn analysis project. All queries demonstrate actionable SQL for financial services analytics.
 
 ---
 
-## 1. Customer Risk Segmentation
+## 1. Variables to Churn
 **Purpose:** Identify high-risk customer segments for targeted retention campaigns
+Prompt:genrate SQL code that shows data variables and their link to churn, include churn rate percentage, difference from average, and baseline churm rate. (cateogries of variables -> Age = 18-25, 26-40, 41-60, 61-85 / Balance = 0, 1-30,000, 30,001-45,000, 45,001-70,000, 70,001-150,000 / Salary = 18,000-30,000, 30,001-45,000, 45,001-70,000, 70,001-150,000) , (Data base scheme context *overview of table names, column names)
 
 ```sql
--- Query: Calculate churn rate by customer segment
-SELECT 
+-- Query: Calculate churn rate by customer data variablesWITH churn_analysis AS (
+  SELECT
+    -- Overall churn rate for reference
+    (SELECT 
+       ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2) 
+     FROM churn) AS overall_churn_rate,
+    
+    'Age Group' AS category,
+      WHEN c.age BETWEEN 18 AND 25 THEN '18-25'
+      WHEN c.age BETWEEN 26 AND 40 THEN '26-40'
+      WHEN c.age BETWEEN 61 AND 85 THEN '61-85'
+    END AS category_value,
+    COUNT(*) AS total_customers,
+    SUM(ch.has_exited) AS churned_customers,
+    ROUND(
+    ) AS churn_rate_diff
+  FROM customers c
+  JOIN churn ch ON c.customer_id = ch.customer_id
+  GROUP BY 
     CASE 
-        WHEN num_products = 1 AND is_active_member = 0 
-            THEN 'Critical: Single Product + Inactive'
-        WHEN has_complaint = 1 AND num_products = 1 
-            THEN 'Critical: Complainers + Single Product'
-        WHEN nps_band = 'Detractor' AND is_active_member = 0 
-            THEN 'Critical: NPS Detractors + Inactive'
-        WHEN num_products >= 3 AND is_active_member = 1 
-            THEN 'Excellent: Multi-Product + Active'
-        WHEN nps_band = 'Promoter' AND card_type = 'Premium' 
-            THEN 'Good: NPS Promoters + Premium'
-        WHEN tenure >= 10 AND is_active_member = 1 
-            THEN 'Good: Long Tenure + Active'
-        ELSE 'Standard: Mixed Characteristics'
-    END as segment,
-    COUNT(*) as customer_count,
-    SUM(has_exited) as churned,
-    ROUND(AVG(has_exited) * 100, 1) as churn_rate_pct,
-    ROUND(AVG(balance), 0) as avg_balance,
-    ROUND(AVG(estimated_salary), 0) as avg_salary
-FROM (
-    SELECT 
-        c.customer_id,
-        a.balance,
-        a.num_products,
-        a.tenure,
-        a.estimated_salary,
-        e.is_active_member,
-        e.card_type,
-        co.has_complaint,
-        co.nps_band,
-        ch.has_exited
-    FROM customers c
-    JOIN accounts a ON c.customer_id = a.customer_id
-    JOIN engagement e ON c.customer_id = e.customer_id
-    JOIN complaints co ON c.customer_id = co.customer_id
-    JOIN churn ch ON c.customer_id = ch.customer_id
+      WHEN c.age BETWEEN 26 AND 40 THEN '26-40'
+      WHEN c.age BETWEEN 61 AND 85 THEN '61-85'
+  UNION ALL
+  -- Gender analysis
+    (SELECT ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2) FROM churn),
+    c.gender,
+    COUNT(*),
+    SUM(ch.has_exited),
+    ROUND(AVG(CAST(ch.has_exited AS FLOAT)) * 100, 2),
+    ROUND(
+      (AVG(CAST(ch.has_exited AS FLOAT)) - 
+       (SELECT AVG(CAST(has_exited AS FLOAT)) FROM churn)) * 100, 
+2
+    )
+  UNION ALL
+    'Region',
+    c.region,
+    COUNT(*),
+    SUM(ch.has_exited),
+    ROUND(AVG(CAST(ch.has_exited AS FLOAT)) * 100, 2),
+    ROUND(
+      (AVG(CAST(ch.has_exited AS FLOAT)) - 
+       (SELECT AVG(CAST(has_exited AS FLOAT)) FROM churn)) * 100, 
+2
+    )
+  FROM customers c
+  JOIN churn ch ON c.customer_id = ch.customer_id
+  GROUP BY c.region
+  
+  UNION ALL
+  
+  -- Balance categories (4-Tier)
+  SELECT
+    (SELECT ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2) FROM churn),
+    'Balance Category',
+    CASE 
+      WHEN a.balance = 0 THEN '£0 (Zero/Dormant)'
+      WHEN a.balance >= 1 AND a.balance <= 30000 THEN '£1-30k (Low)'
+      WHEN a.balance >= 30001 AND a.balance <= 80000 THEN '£30-80k (Medium)'
+      WHEN a.balance >= 80001 AND a.balance <= 250000 THEN '£80-250k (High)'
+    END,
+    COUNT(*),
+    SUM(ch.has_exited),
+    ROUND(AVG(CAST(ch.has_exited AS FLOAT)) * 100, 2),
+    ROUND(
+      (AVG(CAST(ch.has_exited AS FLOAT)) - 
+       (SELECT AVG(CAST(has_exited AS FLOAT)) FROM churn)) * 100, 
+2
+    )
+  FROM accounts a
+  JOIN churn ch ON a.customer_id = ch.customer_id
+  GROUP BY 
+    CASE 
+      WHEN a.balance = 0 THEN '£0 (Zero/Dormant)'
+      WHEN a.balance >= 1 AND a.balance <= 30000 THEN '£1-30k (Low)'
+      WHEN a.balance >= 30001 AND a.balance <= 80000 THEN '£30-80k (Medium)'
+      WHEN a.balance >= 80001 AND a.balance <= 250000 THEN '£80-250k (High)'
+    END
+  
+  UNION ALL
+  
+  -- Salary categories (4-Tier)
+  SELECT
+    (SELECT ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2) FROM churn),
+    'Salary Category',
+    CASE 
+      WHEN a.estimated_salary >= 18000 AND a.estimated_salary <= 30000 THEN '£18-30k (Low Income)'
+      WHEN a.estimated_salary >= 30001 AND a.estimated_salary <= 45000 THEN '£30-45k (Middle Income)'
+      WHEN a.estimated_salary >= 45001 AND a.estimated_salary <= 70000 THEN '£45-70k (Upper Middle)'
+      WHEN a.estimated_salary >= 70001 AND a.estimated_salary <= 150000 THEN '£70-150k (High Income)'
+    END,
+    COUNT(*),
+    SUM(ch.has_exited),
+    ROUND(AVG(CAST(ch.has_exited AS FLOAT)) * 100, 2),
+    ROUND(
+      (AVG(CAST(ch.has_exited AS FLOAT)) - 
+       (SELECT AVG(CAST(has_exited AS FLOAT)) FROM churn)) * 100, 
+2
+    )
+  FROM accounts a
+  JOIN churn ch ON a.customer_id = ch.customer_id
+  GROUP BY 
+    CASE 
+      WHEN a.estimated_salary >= 18000 AND a.estimated_salary <= 30000 THEN '£18-30k (Low Income)'
+      WHEN a.estimated_salary >= 30001 AND a.estimated_salary <= 45000 THEN '£30-45k (Middle Income)'
+      WHEN a.estimated_salary >= 45001 AND a.estimated_salary <= 70000 THEN '£45-70k (Upper Middle)'
+      WHEN a.estimated_salary >= 70001 AND a.estimated_salary <= 150000 THEN '£70-150k (High Income)'
+    END
+  
+  UNION ALL
+  
+  -- Number of products analysis
+  SELECT
+    (SELECT ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2) FROM churn),
+    'Number of Products',
+    CAST(a.num_products AS TEXT),
+    COUNT(*),
+    SUM(ch.has_exited),
+    ROUND(AVG(CAST(ch.has_exited AS FLOAT)) * 100, 2),
+    ROUND(
+      (AVG(CAST(ch.has_exited AS FLOAT)) - 
+       (SELECT AVG(CAST(has_exited AS FLOAT)) FROM churn)) * 100, 
+2
+    )
+  FROM accounts a
+  JOIN churn ch ON a.customer_id = ch.customer_id
+  GROUP BY a.num_products
+  
+  UNION ALL
+  
+  -- Tenure categories
+  SELECT
+    (SELECT ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2) FROM churn),
+    'Tenure',
+    CASE 
+      WHEN a.tenure BETWEEN 0 AND 2 THEN '0-2 years'
+      WHEN a.tenure BETWEEN 3 AND 5 THEN '3-5 years'
+      WHEN a.tenure BETWEEN 6 AND 10 THEN '6-10 years'
+      WHEN a.tenure BETWEEN 11 AND 15 THEN '11-15 years'
+    END,
+    COUNT(*),
+    SUM(ch.has_exited),
+    ROUND(AVG(CAST(ch.has_exited AS FLOAT)) * 100, 2),
+    ROUND(
+      (AVG(CAST(ch.has_exited AS FLOAT)) - 
+       (SELECT AVG(CAST(has_exited AS FLOAT)) FROM churn)) * 100, 
+2
+    )
+  FROM accounts a
+  JOIN churn ch ON a.customer_id = ch.customer_id
+  GROUP BY 
+    CASE 
+      WHEN a.tenure BETWEEN 0 AND 2 THEN '0-2 years'
+      WHEN a.tenure BETWEEN 3 AND 5 THEN '3-5 years'
+      WHEN a.tenure BETWEEN 6 AND 10 THEN '6-10 years'
+      WHEN a.tenure BETWEEN 11 AND 15 THEN '11-15 years'
+    END
+  
+  UNION ALL
+  
+  -- Active member status
+  SELECT
+    (SELECT ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2) FROM churn),
+    'Active Member',
+    CASE WHEN e.is_active_member = 1 THEN 'Yes' ELSE 'No' END,
+    COUNT(*),
+    SUM(ch.has_exited),
+    ROUND(AVG(CAST(ch.has_exited AS FLOAT)) * 100, 2),
+    ROUND(
+      (AVG(CAST(ch.has_exited AS FLOAT)) - 
+       (SELECT AVG(CAST(has_exited AS FLOAT)) FROM churn)) * 100, 
+2
+    )
+  FROM engagement e
+  JOIN churn ch ON e.customer_id = ch.customer_id
+  GROUP BY e.is_active_member
+  
+  UNION ALL
+  
+  -- Card type analysis
+  SELECT
+    (SELECT ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2) FROM churn),
+    'Card Type',
+    e.card_type,
+    COUNT(*),
+    SUM(ch.has_exited),
+    ROUND(AVG(CAST(ch.has_exited AS FLOAT)) * 100, 2),
+    ROUND(
+      (AVG(CAST(ch.has_exited AS FLOAT)) - 
+       (SELECT AVG(CAST(has_exited AS FLOAT)) FROM churn)) * 100, 
+2
+    )
+  FROM engagement e
+  JOIN churn ch ON e.customer_id = ch.customer_id
+  GROUP BY e.card_type
+  
+  UNION ALL
+  
+  -- Has Complaint (Yes/No only)
+  SELECT
+    (SELECT ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2) FROM churn),
+    'Has Complaint',
+    CASE WHEN comp.has_complaint = 1 THEN 'Yes' ELSE 'No' END,
+    COUNT(*),
+    SUM(ch.has_exited),
+    ROUND(AVG(CAST(ch.has_exited AS FLOAT)) * 100, 2),
+    ROUND(
+      (AVG(CAST(ch.has_exited AS FLOAT)) - 
+       (SELECT AVG(CAST(has_exited AS FLOAT)) FROM churn)) * 100, 
+2
+    )
+  FROM complaints comp
+  JOIN churn ch ON comp.customer_id = ch.customer_id
+  GROUP BY comp.has_complaint
+  
+  UNION ALL
+  
+  -- Satisfaction score (for all customers)
+  SELECT
+    (SELECT ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2) FROM churn),
+    'Satisfaction Score',
+    CAST(comp.satisfaction_score AS TEXT),
+    COUNT(*),
+    SUM(ch.has_exited),
+    ROUND(AVG(CAST(ch.has_exited AS FLOAT)) * 100, 2),
+    ROUND(
+      (AVG(CAST(ch.has_exited AS FLOAT)) - 
+       (SELECT AVG(CAST(has_exited AS FLOAT)) FROM churn)) * 100, 
+2
+    )
+  FROM complaints comp
+  JOIN churn ch ON comp.customer_id = ch.customer_id
+  GROUP BY comp.satisfaction_score
+  
+  UNION ALL
+  
+  -- NPS Band
+  SELECT
+    (SELECT ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2) FROM churn),
+    'NPS Band',
+    COALESCE(comp.nps_band, 'Not Surveyed'),
+    COUNT(*),
+    SUM(ch.has_exited),
+    ROUND(AVG(CAST(ch.has_exited AS FLOAT)) * 100, 2),
+    ROUND(
+      (AVG(CAST(ch.has_exited AS FLOAT)) - 
+       (SELECT AVG(CAST(has_exited AS FLOAT)) FROM churn)) * 100, 
+2
+    )
+  FROM complaints comp
+  JOIN churn ch ON comp.customer_id = ch.customer_id
+  GROUP BY comp.nps_band
+  
+  UNION ALL
+  
+  -- Complaint category (only for those with complaints)
+  SELECT
+    (SELECT ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2) FROM churn),
+    'Complaint Category',
+    comp.complaint_category,
+    COUNT(*),
+    SUM(ch.has_exited),
+    ROUND(AVG(CAST(ch.has_exited AS FLOAT)) * 100, 2),
+    ROUND(
+      (AVG(CAST(ch.has_exited AS FLOAT)) - 
+       (SELECT AVG(CAST(has_exited AS FLOAT)) FROM churn)) * 100, 
+2
+    )
+  FROM complaints comp
+  JOIN churn ch ON comp.customer_id = ch.customer_id
+  WHERE comp.has_complaint = 1
+  GROUP BY comp.complaint_category
 )
-GROUP BY segment
-ORDER BY churn_rate_pct DESC;
+
+SELECT 
+  category,
+  category_value,
+  total_customers,
+  churned_customers,
+  churn_rate || '%' AS churn_rate_pct,
+  churn_rate_diff || '%' AS diff_from_avg,
+  CASE 
+    WHEN ABS(churn_rate_diff) >= 10 THEN 'Strong'
+    WHEN ABS(churn_rate_diff) >= 5 THEN 'Moderate'
+    WHEN ABS(churn_rate_diff) >= 2 THEN 'Weak'
+    ELSE 'Minimal'
+  END AS correlation_strength,
+  overall_churn_rate || '%' AS baseline_churn_rate
+FROM churn_analysis
+ORDER BY 
+  category,
+  ABS(churn_rate_diff) DESC;
 ```
 
 **Key Techniques:**
@@ -60,134 +311,370 @@ ORDER BY churn_rate_pct DESC;
 - Subquery for clean data preparation
 
 **Business Value:**
-- Identifies 8 distinct customer segments
-- Critical segment has 47.9% churn rate (2.3x baseline)
+- Identifies area's most linked to churn
 - Enables targeted retention campaigns
 
 ---
 
-## 2. Regional Performance Analysis
-**Purpose:** Understand geographic churn patterns for operational planning
 
-```sql
--- Query: Regional churn analysis with financial metrics
-SELECT 
-    c.region,
-    COUNT(*) as total_customers,
-    SUM(ch.has_exited) as churned_customers,
-    ROUND(AVG(ch.has_exited) * 100, 1) as churn_rate_pct,
-    ROUND(AVG(a.balance), 0) as avg_balance,
-    ROUND(AVG(a.estimated_salary), 0) as avg_salary,
-    ROUND(AVG(a.num_products), 2) as avg_products,
-    ROUND(AVG(CASE WHEN e.is_active_member = 1 THEN 1.0 ELSE 0.0 END) * 100, 1) 
-        as active_member_pct,
-    -- Calculate expected loss
-    ROUND(SUM(CASE WHEN ch.has_exited = 1 THEN a.balance ELSE 0 END) / 1000000, 2) 
-        as churned_balance_millions
-FROM customers c
-JOIN accounts a ON c.customer_id = a.customer_id
-JOIN engagement e ON c.customer_id = e.customer_id
-JOIN churn ch ON c.customer_id = ch.customer_id
-GROUP BY c.region
-ORDER BY churn_rate_pct DESC;
-```
+## 2. Churn Combo variables
+**Purpose:** Identify combo variables (2 variables combined) that are most likely to churn - deeper insight that only looking at 1 variable
 
-**Key Techniques:**
-- Calculated metrics within aggregates
-- CASE statements for conditional aggregation
-- Financial impact calculation
-- Multi-dimensional grouping
+Prompt: write an SQL query that returns linkage between the top variables i.e A+B - link all combiniation of 2 variables to show key at risk segements of chruning: Single Product Only, Inactive Member, NPS Detractor, Has Complaint, Age 18-25
 
-**Business Value:**
-- Identifies highest-risk regions (Germany: 26.5%, France: 25.7%)
-- Quantifies balance at risk by region
-- Informs regional staffing and campaign allocation
-
----
-
-## 3. Product Cross-Sell Opportunity Analysis
-**Purpose:** Identify customers most likely to adopt additional products
-
-```sql
--- Query: Score single-product customers for cross-sell campaign
-WITH customer_profile AS (
-    SELECT 
-        c.customer_id,
-        c.age,
-        c.region,
-        a.balance,
-        a.num_products,
-        a.tenure,
-        a.estimated_salary,
-        e.is_active_member,
-        e.card_type,
-        co.has_complaint,
-        co.satisfaction_score,
-        ch.has_exited
-    FROM customers c
-    JOIN accounts a ON c.customer_id = a.customer_id
-    JOIN engagement e ON c.customer_id = e.customer_id
-    JOIN complaints co ON c.customer_id = co.customer_id
-    JOIN churn ch ON c.customer_id = ch.customer_id
-    WHERE a.num_products = 1  -- Target single-product customers
+WITH overall_churn AS (
+  SELECT ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2) AS baseline_churn_rate
+  FROM churn
 ),
-propensity_score AS (
-    SELECT 
-        customer_id,
-        age,
-        region,
-        balance,
-        tenure,
-        estimated_salary,
-        card_type,
-        -- Calculate propensity score (0-100)
-        ROUND(
-            (CASE WHEN is_active_member = 1 THEN 30 ELSE 0 END) +
-            (CASE WHEN has_complaint = 0 THEN 20 ELSE 0 END) +
-            (CASE WHEN satisfaction_score >= 4 THEN 15 ELSE 0 END) +
-            (CASE WHEN balance >= 50000 THEN 15 ELSE balance / 50000.0 * 15 END) +
-            (CASE WHEN tenure >= 5 THEN 10 ELSE tenure / 5.0 * 10 END) +
-            (CASE WHEN card_type = 'Premium' THEN 10 
-                  WHEN card_type = 'Credit' THEN 5 
-                  ELSE 0 END)
-        , 1) as propensity_score,
-        has_exited
-    FROM customer_profile
-)
-SELECT 
+
+=-- Define all categorical variables
+categorized_customers AS (
+  SELECT 
+    c.customer_id,
+    ch.has_exited,
+    
+    -- Age Group
     CASE 
-        WHEN propensity_score >= 75 THEN 'Tier 1: Hot Leads'
-        WHEN propensity_score >= 60 THEN 'Tier 2: Warm Prospects'
-        WHEN propensity_score >= 40 THEN 'Tier 3: Nurture'
-        ELSE 'Tier 4: Low Priority'
-    END as priority_tier,
-    COUNT(*) as customer_count,
-    ROUND(AVG(propensity_score), 1) as avg_propensity,
-    ROUND(SUM(balance) / 1000, 0) as total_balance_thousands,
-    ROUND(AVG(balance), 0) as avg_balance,
-    -- Estimate expected revenue (assuming £22.50 monthly fee for 2nd product)
-    ROUND(COUNT(*) * 22.50 * 12 * 0.6, 0) as expected_annual_revenue_60pct_conversion
-FROM propensity_score
-WHERE has_exited = 0  -- Only target current customers
-GROUP BY priority_tier
-ORDER BY avg_propensity DESC;
-```
+      WHEN c.age BETWEEN 18 AND 25 THEN 'Age 18-25'
+      WHEN c.age BETWEEN 26 AND 40 THEN 'Age 26-40'
+      WHEN c.age BETWEEN 41 AND 60 THEN 'Age 41-60'
+      WHEN c.age BETWEEN 61 AND 85 THEN 'Age 61-85'
+    END AS age_group,
+    
+    -- Gender
+    'Gender ' || c.gender AS gender,
+    
+    -- Region
+    'Region ' || c.region AS region,
+    
+    -- Balance Category
+    CASE 
+      WHEN a.balance = 0 THEN 'Balance £0 (Zero/Dormant)'
+      WHEN a.balance >= 1 AND a.balance <= 30000 THEN 'Balance £1-30k (Low)'
+      WHEN a.balance >= 30001 AND a.balance <= 80000 THEN 'Balance £30-80k (Medium)'
+      WHEN a.balance >= 80001 THEN 'Balance £80k+ (High)'
+    END AS balance_category,
+    
+    -- Salary Category
+    CASE 
+      WHEN a.estimated_salary >= 18000 AND a.estimated_salary <= 30000 THEN 'Salary £18-30k (Low)'
+      WHEN a.estimated_salary >= 30001 AND a.estimated_salary <= 45000 THEN 'Salary £30-45k (Middle)'
+      WHEN a.estimated_salary >= 45001 AND a.estimated_salary <= 70000 THEN 'Salary £45-70k (Upper Middle)'
+      WHEN a.estimated_salary >= 70001 THEN 'Salary £70k+ (High)'
+    END AS salary_category,
+    
+    -- Number of Products
+    CASE 
+      WHEN a.num_products = 1 THEN 'Single Product Only'
+      WHEN a.num_products = 2 THEN '2 Products'
+      WHEN a.num_products = 3 THEN '3 Products'
+      WHEN a.num_products = 4 THEN '4 Products'
+    END AS products,
 
-**Key Techniques:**
-- Common Table Expressions (CTEs) for query organization
-- Complex scoring algorithm
-- Weighted propensity calculation
-- Revenue projection modeling
-- Multi-criteria customer filtering
 
-**Business Value:**
-- Identifies 595 "Tier 1" customers with 77.2 avg propensity score
-- Projects £13.4K annual revenue from Tier 1 conversions
-- Enables prioritized outreach campaigns
+## 2.5 Churn Combo variables
+**Purpose:** Add in priorty score - to help make clear key areas for actions. (to the  combo variables analysis above)
+
+Prompt: add in an additional column that shows the reltive importance based on total customers and risk multipler i.e so i can order it to see the most valuable at risk segements to target - rank the priorty score out of 10 to 1decimal place
+  SELECT 
+    age_group AS variable_1,
+    products AS variable_2,
+    COUNT(*) AS total_customers,
+    SUM(has_exited) AS churned_customers,
+    ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2) AS churn_rate
+  FROM categorized_customers
+  WHERE age_group IS NOT NULL AND products IS NOT NULL
+  GROUP BY age_group, products
+  
+  UNION ALL
+  
+  -- Age Group + Active Status
+  SELECT 
+    age_group,
+    active_status,
+    COUNT(*),
+    SUM(has_exited),
+    ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2)
+  FROM categorized_customers
+  WHERE age_group IS NOT NULL AND active_status IS NOT NULL
+  GROUP BY age_group, active_status
+  
+  UNION ALL
+  
+  -- Age Group + NPS Band
+  SELECT 
+    age_group,
+    nps_band,
+    COUNT(*),
+    SUM(has_exited),
+    ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2)
+  FROM categorized_customers
+  WHERE age_group IS NOT NULL AND nps_band IS NOT NULL
+  GROUP BY age_group, nps_band
+  
+  UNION ALL
+  
+  -- Age Group + Complaint Status
+  SELECT 
+    age_group,
+    complaint_status,
+    COUNT(*),
+    SUM(has_exited),
+    ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2)
+  FROM categorized_customers
+  WHERE age_group IS NOT NULL AND complaint_status IS NOT NULL
+  GROUP BY age_group, complaint_status
+  
+  UNION ALL
+  
+  -- Age Group + Balance Category
+  SELECT 
+    age_group,
+    balance_category,
+    COUNT(*),
+    SUM(has_exited),
+    ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2)
+  FROM categorized_customers
+  WHERE age_group IS NOT NULL AND balance_category IS NOT NULL
+  GROUP BY age_group, balance_category
+  
+  UNION ALL
+  
+  -- Products + Active Status
+  SELECT 
+    products,
+    active_status,
+    COUNT(*),
+    SUM(has_exited),
+    ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2)
+  FROM categorized_customers
+  WHERE products IS NOT NULL AND active_status IS NOT NULL
+  GROUP BY products, active_status
+  
+  UNION ALL
+  
+  -- Products + NPS Band
+  SELECT 
+    products,
+    nps_band,
+    COUNT(*),
+    SUM(has_exited),
+    ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2)
+  FROM categorized_customers
+  WHERE products IS NOT NULL AND nps_band IS NOT NULL
+  GROUP BY products, nps_band
+  
+  UNION ALL
+  
+  -- Products + Complaint Status
+  SELECT 
+    products,
+    complaint_status,
+    COUNT(*),
+    SUM(has_exited),
+    ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2)
+  FROM categorized_customers
+  WHERE products IS NOT NULL AND complaint_status IS NOT NULL
+  GROUP BY products, complaint_status
+  
+  UNION ALL
+  
+  -- Products + Balance Category
+  SELECT 
+    products,
+    balance_category,
+    COUNT(*),
+    SUM(has_exited),
+    ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2)
+  FROM categorized_customers
+  WHERE products IS NOT NULL AND balance_category IS NOT NULL
+  GROUP BY products, balance_category
+  
+  UNION ALL
+  
+  -- Active Status + NPS Band
+  SELECT 
+    active_status,
+    nps_band,
+    COUNT(*),
+    SUM(has_exited),
+    ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2)
+  FROM categorized_customers
+  WHERE active_status IS NOT NULL AND nps_band IS NOT NULL
+  GROUP BY active_status, nps_band
+  
+  UNION ALL
+  
+  -- Active Status + Complaint Status
+  SELECT 
+    active_status,
+    complaint_status,
+    COUNT(*),
+    SUM(has_exited),
+    ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2)
+  FROM categorized_customers
+  WHERE active_status IS NOT NULL AND complaint_status IS NOT NULL
+  GROUP BY active_status, complaint_status
+  
+  UNION ALL
+  
+  -- Active Status + Balance Category
+  SELECT 
+    active_status,
+    balance_category,
+    COUNT(*),
+    SUM(has_exited),
+    ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2)
+  FROM categorized_customers
+  WHERE active_status IS NOT NULL AND balance_category IS NOT NULL
+  GROUP BY active_status, balance_category
+  
+  UNION ALL
+  
+  -- NPS Band + Complaint Status
+  SELECT 
+    nps_band,
+    complaint_status,
+    COUNT(*),
+    SUM(has_exited),
+    ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2)
+  FROM categorized_customers
+  WHERE nps_band IS NOT NULL AND complaint_status IS NOT NULL
+  GROUP BY nps_band, complaint_status
+  
+  UNION ALL
+  
+  -- NPS Band + Balance Category
+  SELECT 
+    nps_band,
+    balance_category,
+    COUNT(*),
+    SUM(has_exited),
+    ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2)
+  FROM categorized_customers
+  WHERE nps_band IS NOT NULL AND balance_category IS NOT NULL
+  GROUP BY nps_band, balance_category
+  
+  UNION ALL
+  
+  -- Complaint Status + Balance Category
+  SELECT 
+    complaint_status,
+    balance_category,
+    COUNT(*),
+    SUM(has_exited),
+    ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2)
+  FROM categorized_customers
+  WHERE complaint_status IS NOT NULL AND balance_category IS NOT NULL
+  GROUP BY complaint_status, balance_category
+  
+  UNION ALL
+  
+  -- Gender + Products
+  SELECT 
+    gender,
+    products,
+    COUNT(*),
+    SUM(has_exited),
+    ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2)
+  FROM categorized_customers
+  WHERE gender IS NOT NULL AND products IS NOT NULL
+  GROUP BY gender, products
+  
+  UNION ALL
+  
+  -- Gender + Active Status
+  SELECT 
+    gender,
+    active_status,
+    COUNT(*),
+    SUM(has_exited),
+    ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2)
+  FROM categorized_customers
+  WHERE gender IS NOT NULL AND active_status IS NOT NULL
+  GROUP BY gender, active_status
+  
+  UNION ALL
+  
+  -- Gender + NPS Band
+  SELECT 
+    gender,
+    nps_band,
+    COUNT(*),
+    SUM(has_exited),
+    ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2)
+  FROM categorized_customers
+  WHERE gender IS NOT NULL AND nps_band IS NOT NULL
+  GROUP BY gender, nps_band
+  
+  UNION ALL
+  
+  -- Tenure + Products
+  SELECT 
+    tenure,
+    products,
+    COUNT(*),
+    SUM(has_exited),
+    ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2)
+  FROM categorized_customers
+  WHERE tenure IS NOT NULL AND products IS NOT NULL
+  GROUP BY tenure, products
+  
+  UNION ALL
+  
+  -- Tenure + Active Status
+  SELECT 
+    tenure,
+    active_status,
+    COUNT(*),
+    SUM(has_exited),
+    ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2)
+  FROM categorized_customers
+  WHERE tenure IS NOT NULL AND active_status IS NOT NULL
+  GROUP BY tenure, active_status
+  
+  UNION ALL
+  
+  -- Card Type + Products
+  SELECT 
+    card_type,
+    products,
+    COUNT(*),
+    SUM(has_exited),
+    ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2)
+  FROM categorized_customers
+  WHERE card_type IS NOT NULL AND products IS NOT NULL
+  GROUP BY card_type, products
+  
+  UNION ALL
+  
+  -- Card Type + Active Status
+  SELECT 
+    card_type,
+    active_status,
+    COUNT(*),
+    SUM(has_exited),
+    ROUND(AVG(CAST(has_exited AS FLOAT)) * 100, 2)
+  FROM categorized_customers
+  WHERE card_type IS NOT NULL AND active_status IS NOT NULL
+  GROUP BY card_type, active_status
+)
+
+SELECT 
+  variable_1 || ' + ' || variable_2 AS at_risk_segment,
+  total_customers,
+  churned_customers,
+  churn_rate || '%' AS churn_percentage,
+  ROUND(churn_rate / (SELECT baseline_churn_rate FROM overall_churn), 2) || 'x' AS risk_multiplier,
+  (SELECT baseline_churn_rate || '%' FROM overall_churn) AS baseline_churn_rate
+FROM two_variable_combinations
+WHERE total_customers >= 50  -- Minimum sample size for statistical significance
+  AND churn_rate > (SELECT baseline_churn_rate FROM overall_churn)  -- Only show above-average churn segments
+ORDER BY churn_rate DESC
 
 ---
 
-## 4. Complaint Category Impact Analysis
+## 3. Complaint Category Impact Analysis
 **Purpose:** Prioritize complaint resolution by churn impact
 
 ```sql
@@ -231,7 +718,7 @@ ORDER BY churn_rate_pct DESC;
 
 ---
 
-## 5. Cohort Retention Analysis
+## 4. Cohort Retention Analysis
 **Purpose:** Track customer retention by tenure cohort
 
 ```sql
@@ -287,7 +774,7 @@ ORDER BY
 
 ---
 
-## 6. High-Value Customer At-Risk Alert
+## 5. High-Value Customer At-Risk Alert
 **Purpose:** Real-time identification of high-value customers showing churn signals
 
 ```sql
