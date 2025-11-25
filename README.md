@@ -9,7 +9,7 @@ Interactive data analysis dashboard built to demonstrate advanced SQL, Python, a
 ## 📊 Key Features
 
 - **Advanced SQL Analysis**: Complex joins, CTEs, and window functions across 5 normalized tables
-- **Interactive Visualizations**: Built with Plotly for dynamic data exploration
+- **Visualizations**: Built with Plotly for dynamic data exploration
 - **Risk Scoring Model**: Automated customer segmentation for retention targeting
 - **Strategic Insights**: Data-driven recommendations with quantified business impact
 - **LLM-Assisted Development**: Documented workflow showing AI-enhanced productivity
@@ -31,36 +31,7 @@ Analysis of 10,000 UK banking customers to identify churn drivers and optimize r
 - **Deployment**: Streamlit Cloud
 - **Development**: LLM-assisted coding (Claude/ChatGPT) for rapid prototyping
 
-## 🚀 Quick Start
 
-### Run Locally
-
-```bash
-# Clone repository
-git clone [your-repo-url]
-cd bank-churn-analysis
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run dashboard
-streamlit run streamlit_app.py
-```
-
-## 📈 Key SQL Queries Demonstrated
-
-### Customer Segmentation by Product Count
-```sql
-SELECT 
-    num_products,
-    COUNT(*) as total_customers,
-    SUM(has_exited) as churned,
-    ROUND(AVG(has_exited) * 100, 1) as churn_rate
-FROM accounts a
-JOIN churn ch ON a.customer_id = ch.customer_id
-GROUP BY num_products
-ORDER BY num_products;
-```
 
 ## 💡 Strategic Insights Generated
 
@@ -89,4 +60,4 @@ This project demonstrates modern product development practices using AI tools:
 
 ---
 
-*Built in 1 evening using LLM-assisted workflows for product analytics role applications*
+*Built in 1 evening using LLM-assisted workflows for product analytics skill developement*
